@@ -1,1 +1,35 @@
 /med_env
+
+# Environment
+.env
+
+# Migration cache
+*/migrations/__pycache__/
+*/migrations/*.py
+!*/migrations/__init__.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis
+dump.rdb
+
+# MySQL Dumps
+*.sql
+
+# Sentry
+.sentryclirc
+
+# Logs
+logs/
+*.log
+
+# Media & Static
+media/
+media_cdn/
+staticfiles/
+static_cdn/
+
+# Django collected static
+/static/
