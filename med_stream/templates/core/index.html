@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!--Title-->
+    <title>
+        {% block title %}MedStream{% endblock %}
+    </title>
+
+    <!--Bootstrap 5 CSS-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <!-- HTMX -->
+    <script
+        src="https://unpkg.com/htmx.org@1.9.12"
+        defer
+    ></script>
+
+    <!-- Alpine.js -->
+    <script
+        defer
+        src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <!--Custom CSS-->
+    <link rel="stylesheet" href="{% static 'css/common/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/index/index.css' %}">
+
+</head>
+<body>
+    <div class="layout-wrapper">
+        <div class="sidebar-wrapper"></div>
+        <div class="main-content">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+</body>
+</html>

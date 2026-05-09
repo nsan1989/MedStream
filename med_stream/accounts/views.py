@@ -1,3 +1,7 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+# Auth view.
+def authView(request):
+    context = {}
+    return render(request, "accounts/auth.html", context)
