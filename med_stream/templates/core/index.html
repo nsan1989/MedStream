@@ -32,6 +32,20 @@
 
 </head>
 <body>
+    <!--message content-->
+    <div class="message-wrapper">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert">
+                    <span>{{message}}</span>
+                    <button>
+                        ok
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <!--main-content-->
     <div class="layout-wrapper">
         <div class="sidebar-wrapper"></div>
         <div class="main-content">
