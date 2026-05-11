@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from core.models import TimeStampedModel
 from .enums import LayoutType, ZoneType
 from accounts.models import CustomUser
@@ -7,6 +8,13 @@ from accounts.models import CustomUser
 # Layout model.
 class Layout(TimeStampedModel):
     name = models.CharField(max_length=255)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="layouts",
+    )
     layout_type = models.CharField(
         max_length=50, choices=LayoutType.choices, default=LayoutType.LANDSCAPE
     )
@@ -24,6 +32,29 @@ class Layout(TimeStampedModel):
     )
 
     is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "name"],
+                name="uniq_layout_name_per_organization",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if self.created_by and self.organization:
+            if self.created_by.organization_id != self.organization_id:
+                raise ValidationError(
+                    {"created_by": "Creator must belong to the selected organization."}
+                )
+
+        if self.updated_by and self.organization:
+            if self.updated_by.organization_id != self.organization_id:
+                raise ValidationError(
+                    {"updated_by": "Updater must belong to the selected organization."}
+                )
 
     def __str__(self):
         return self.name

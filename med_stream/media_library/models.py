@@ -2,6 +2,7 @@ import uuid
 
 
 from django.db import models
+from django.core.exceptions import ValidationError
 from core.models import TimeStampedModel
 from accounts.models import CustomUser
 from .enums import MediaAssetType
@@ -11,6 +12,13 @@ from .enums import MediaAssetType
 class MediaAsset(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="media_assets",
+    )
     description = models.TextField(blank=True)
     media_type = models.CharField(
         max_length=20, choices=MediaAssetType.choices, default=MediaAssetType.VIDEO
@@ -33,6 +41,23 @@ class MediaAsset(TimeStampedModel):
     )
     is_active = models.BooleanField(default=True)
     is_public = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "title"],
+                name="uniq_media_asset_title_per_organization",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if self.uploaded_by and self.organization:
+            if self.uploaded_by.organization_id != self.organization_id:
+                raise ValidationError(
+                    {"uploaded_by": "Uploader must belong to the selected organization."}
+                )
 
     def __str__(self):
         return self.title

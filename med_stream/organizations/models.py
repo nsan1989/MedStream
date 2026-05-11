@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.utils.text import slugify
 from .enums import OrganizationType, SubscriptionStatus
 from subscriptions.models import SubscriptionPlan
 from core.models import TimeStampedModel
+from accounts.models import CustomUser
 
 
 # Organization model.
@@ -57,6 +59,61 @@ class Organization(TimeStampedModel):
         verbose_name = "Organization"
         verbose_name_plural = "Organizations"
 
+    def clean(self):
+        super().clean()
+
+        name_qs = Organization.objects.filter(name__iexact=self.name)
+        if self.pk:
+            name_qs = name_qs.exclude(pk=self.pk)
+        if name_qs.exists():
+            raise ValidationError(
+                {"name": "An organization with this name already exists."}
+            )
+
+        if self.slug:
+            slug_qs = Organization.objects.filter(slug__iexact=self.slug)
+            if self.pk:
+                slug_qs = slug_qs.exclude(pk=self.pk)
+            if slug_qs.exists():
+                raise ValidationError(
+                    {"slug": "An organization with this slug already exists."}
+                )
+
+        if self.registration_number:
+            reg_qs = Organization.objects.filter(
+                registration_number__iexact=self.registration_number
+            )
+            if self.pk:
+                reg_qs = reg_qs.exclude(pk=self.pk)
+            if reg_qs.exists():
+                raise ValidationError(
+                    {
+                        "registration_number": (
+                            "An organization with this registration number already exists."
+                        )
+                    }
+                )
+
+        if self.email:
+            email_qs = Organization.objects.filter(email__iexact=self.email)
+            if self.pk:
+                email_qs = email_qs.exclude(pk=self.pk)
+            if email_qs.exists():
+                raise ValidationError(
+                    {"email": "An organization with this email already exists."}
+                )
+
+        if self.phone_number:
+            phone_qs = Organization.objects.filter(phone_number=self.phone_number)
+            if self.pk:
+                phone_qs = phone_qs.exclude(pk=self.pk)
+            if phone_qs.exists():
+                raise ValidationError(
+                    {
+                        "phone_number": "An organization with this phone number already exists."
+                    }
+                )
+
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.name)
@@ -67,10 +124,46 @@ class Organization(TimeStampedModel):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
             self.slug = slug
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
+
+
+# Organization member model.
+class OrganizationMember(TimeStampedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="organization_members"
+    )
+    member = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="user_organizations"
+    )
+    is_active = models.BooleanField(default=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "organization_members"
+        unique_together = ("organization", "member")
+        ordering = ["-joined_at"]
+        verbose_name = "Organization Member"
+        verbose_name_plural = "Organization Members"
+
+    def clean(self):
+        super().clean()
+        member_qs = OrganizationMember.objects.filter(
+            organization=self.organization, member=self.member
+        )
+        if self.pk:
+            member_qs = member_qs.exclude(pk=self.pk)
+        if member_qs.exists():
+            raise ValidationError(
+                {"member": "This user is already a member of the organization."}
+            )
+
+    def __str__(self):
+        return f"{self.member.phone_number} - {self.organization.name}"
 
 
 # Organization branding model.

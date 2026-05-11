@@ -13,7 +13,6 @@ class DeviceResource(resources.ModelResource):
             "name",
             "floor",
             "device_type",
-            "status",
             "orientation",
             "resolution_width",
             "resolution_height",
@@ -29,14 +28,13 @@ class DeviceAdmin(ImportExportModelAdmin):
     list_display = (
         "name",
         "device_type",
-        "status",
         "orientation",
         "resolution_width",
         "resolution_height",
         "ip_address",
         "is_active",
     )
-    list_filter = ("device_type", "status", "orientation", "is_active")
+    list_filter = ("device_type", "orientation", "is_active")
     search_fields = ("name", "ip_address")
 
 

@@ -2,6 +2,7 @@ import uuid
 
 
 from django.db import models
+from django.core.exceptions import ValidationError
 from organizations.models import Organization
 from core.models import TimeStampedModel
 
@@ -15,6 +16,16 @@ class Block(TimeStampedModel):
         verbose_name = "Block"
         verbose_name_plural = "Blocks"
         ordering = ["name"]
+
+    def clean(self):
+        super().clean()
+
+        name_qs = Block.objects.filter(name__iexact=self.name)
+        if self.pk:
+            name_qs = name_qs.exclude(pk=self.pk)
+
+        if name_qs.exists():
+            raise ValidationError({"name": "A block with this name already exists."})
 
     def __str__(self):
         return self.name
@@ -30,6 +41,19 @@ class Floor(TimeStampedModel):
         verbose_name = "Floor"
         verbose_name_plural = "Floors"
         ordering = ["name"]
+
+    def clean(self):
+        super().clean()
+        floor_qs = Floor.objects.filter(
+            name__iexact=self.name,
+            block__name__iexact=self.block.name,
+        )
+        if self.pk:
+            floor_qs = floor_qs.exclude(pk=self.pk)
+        if floor_qs.exists():
+            raise ValidationError(
+                {"name": "A floor with this name already exists in the same block."}
+            )
 
     def __str__(self):
         return self.name
@@ -50,6 +74,19 @@ class Facility(TimeStampedModel):
         verbose_name = "Facility"
         verbose_name_plural = "Facilities"
         ordering = ["name"]
+
+    def clean(self):
+        super().clean()
+        facility_qs = Facility.objects.filter(
+            name__iexact=self.name,
+            phone_number__iexact=self.phone_number,
+        )
+        if self.pk:
+            facility_qs = facility_qs.exclude(pk=self.pk)
+        if facility_qs.exists():
+            raise ValidationError(
+                {"name": "A facility with this name and phone number already exists."}
+            )
 
     def __str__(self):
         return self.name
