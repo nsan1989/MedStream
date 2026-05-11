@@ -2,6 +2,6 @@ from django.shortcuts import render
 
 
 # Base view.
-def index(request):
+def Home(request):
     context = {}
-    return render(request, "core/index.html", context)
+    return render(request, "core/home.html", context)
