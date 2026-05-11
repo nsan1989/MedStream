@@ -33,3 +33,8 @@ static_cdn/
 
 # Django collected static
 /static/
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
