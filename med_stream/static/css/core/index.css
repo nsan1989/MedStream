@@ -1,3 +1,50 @@
 .layout-wrapper {
     display: flex;
+    min-height: 100vh;
+}
+
+.sidebar-wrapper {
+    width: 60px;
+    flex: 0 0 60px;
+    transition: width 0.2s ease, flex-basis 0.2s ease;
+    overflow: hidden;
+}
+
+.layout-wrapper.sidebar-expanded .sidebar-wrapper,
+.sidebar-wrapper.expanded {
+    width: 220px;
+    flex: 0 0 220px;
+}
+
+.main-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    transition: width 0.2s ease;
+}
+
+.brand-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.brand-icon img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.layout-wrapper.sidebar-expanded .brand-icon,
+.sidebar-wrapper.expanded .brand-icon {
+    width: 60px;
+    height: 60px;
+}
+
+.layout-wrapper.sidebar-expanded .brand-icon img,
+.sidebar-wrapper.expanded .brand-icon img {
+    width: 44px;
+    height: 44px;
 }

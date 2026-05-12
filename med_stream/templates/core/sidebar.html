@@ -1,0 +1,40 @@
+{% load static %}
+{% load bootstrap_icons %}
+
+<aside>
+    <div class="sidebar-top">
+        {% for item in sidebar_top_items %}
+            {% if item.type == "toggle" %}
+                <div class="toggle-wrapper">
+                    <button
+                        type="button"
+                        class="sidebar-toggle sidebar-toggle-collapse"
+                        aria-label="{{ item.aria_label_collapse }}"
+                    >
+                        {% bs_icon item.collapse_icon size='1em' %}
+                    </button>
+                    <button
+                        type="button"
+                        class="sidebar-toggle sidebar-toggle-expand"
+                        aria-label="{{ item.aria_label_expand }}"
+                    >
+                        {% bs_icon item.expand_icon size='1em' %}
+                    </button>
+                </div>
+            {% elif item.type == "brand" %}
+                <div class="brand-icon">
+                    <img src="{% static item.logo_path %}" alt="{{ item.logo_alt }}">
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <nav class="sidebar-menu">
+        {% for item in menu_items %}
+            <a class="menu-item" href="{{ item.menu_link }}">
+                <span class="menu-icon">{% bs_icon item.icon size='1em' %}</span>
+                <span class="menu-name">{{ item.menu_name }}</span>
+            </a>
+        {% endfor %}
+    </nav>
+</aside>

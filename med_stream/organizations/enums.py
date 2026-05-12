@@ -10,6 +10,7 @@ class OrganizationType(models.TextChoices):
 
 
 class SubscriptionStatus(models.TextChoices):
+    TRIAL = "TRIAL", "Trial"
     ACTIVE = "ACTIVE", "Active"
     INACTIVE = "INACTIVE", "Inactive"
     PENDING = "PENDING", "Pending"

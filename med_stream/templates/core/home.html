@@ -1,8 +1,21 @@
+{% extends 'core/base.html' %}
 {% load static %}
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'css/core/home.css' %}">
+<div class="container-fluid">
+    <div class="home-wrapper">
+        <div class="top-content">
+            <h1>MedStream</h1>
+            <p></p>
+        </div>
+        <div class="bottom-content">
+            <p>For registration and login please</p><a href="{% url 'login' %}">click here.</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-Home
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/core/home.css' %}">
 {% endblock %}

@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.db import IntegrityError
-from .models import CustomUser
 
 
 from .forms import RegisterForm, LoginForm
@@ -18,42 +17,33 @@ def authView(request):
         if action not in ["register", "login"]:
             action = (
                 "register"
-                if "organization" in request.POST or "role" in request.POST
+                if "organization_name" in request.POST
+                or "organization_type" in request.POST
                 else "login"
             )
 
+        # Register
         if action == "register":
             register_form = RegisterForm(request.POST)
             if register_form.is_valid():
-                organization = register_form.cleaned_data["organization"]
-                role = register_form.cleaned_data["role"]
-
-                if role == "ADMIN":
-                    admin_exists = CustomUser.objects.filter(
-                        organization=organization,
-                        role="ADMIN",
-                    ).exists()
-                    if admin_exists:
-                        messages.error(
-                            request,
-                            "This organization already has an admin. Please register as staff.",
-                        )
-                        return redirect("register")
-
                 try:
                     register_form.save()
                 except IntegrityError:
                     messages.error(
                         request,
-                        "A user with these details already exists. Please use different details.",
+                        "Unable to complete registration due to duplicate data.",
                     )
                     return redirect("register")
 
-                messages.success(request, "Registration successful. Please log in.")
+                messages.success(
+                    request,
+                    "Organization registered successfully. Trial activated for 10 days. Please log in as admin.",
+                )
                 return redirect("login")
 
             messages.error(request, "Please provide valid registration details.")
 
+        # Login
         if action == "login":
             login_form = LoginForm(request.POST)
             if login_form.is_valid():
@@ -65,7 +55,7 @@ def authView(request):
                 if login_user is not None:
                     login(request, login_user)
                     messages.success(request, "Login successful.")
-                    return redirect("index")
+                    return redirect("dashboard")
 
                 messages.error(request, "Invalid credentials.")
             else:

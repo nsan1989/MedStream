@@ -1,7 +1,107 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+
 {% block title %}
 
 {% endblock %}
 
 {% block content %}
-Authentication page.
+
+<div class="container-fluid w-100">
+    <div class="auth-wrapper">
+        <!--Desktop view-->
+        <div class="row d-none d-md-flex">
+            <!--Left content-->
+            <div id="left-content" class="col-md-6">
+                <!--on active-->
+                <div class="login-content">
+                    <h2>Login Form</h2>
+                    <!--Login form-->
+                    <div class="login-form-wrapper">
+                        <form action="{% url 'login' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="login">
+                            <div class="mb-3">
+                                <label for="login_phone_number" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="login_phone_number" name="phone_number" aria-describedby="loginPhoneHelp">
+                            </div>
+                            <div class="mb-3">
+                                <label for="login_password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="login_password" name="password">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                    </div>
+                </div>
+                <!--not active-->
+                <div class="login-info">
+                    <h2>Welcome Back</h2>
+                    <p>Already have an account?</p>
+
+                    <button id="showLoginLeft" class="btn btn-warning" type="button">
+                        Login
+                    </button>
+                </div>
+            </div>
+            <!--Right content-->
+            <div id="right-content" class="col-md-6">
+                <!--on active-->
+                <div class="register-content">
+                    <h2>Register Form</h2>
+                    <!--Register form-->
+                    <div class="register-form-wrapper">
+                        <form action="{% url 'register' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="register">
+                            <div class="mb-3">
+                                <label for="organization_name" class="form-label">Organization Name</label>
+                                <input type="text" class="form-control" id="organization_name" name="organization_name" aria-describedby="organizationNameHelp">
+                            </div>
+                            <div class="mb-3">
+                                <label for="organization_type" class="form-label">Organization Type</label>
+                                <select class="form-select" id="organization_type" name="organization_type" aria-describedby="organizationTypeHelp">
+                                    {% for value, label in register_form.organization_type.field.choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="register_phone_number" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="register_phone_number" name="phone_number" aria-describedby="registerPhoneHelp">
+                            </div>
+                            <div class="mb-3">
+                                <label for="register_password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="register_password" name="password">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                    </div>
+                </div>
+                <!--not active-->
+                <div class="register-info">
+                    <h2>Welcome Back</h2>
+                    <p>Don't have an account?</p>
+
+                    <button id="showRegisterRight" class="btn btn-warning" type="button">
+                        Register
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!--Mobile view-->
+        <div class="row d-md-none">
+            mobile
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accounts/auth.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth.js' %}"></script>
 {% endblock %}

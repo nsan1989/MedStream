@@ -227,7 +227,7 @@ class OrganizationSubscription(TimeStampedModel):
 
     @classmethod
     def create_free_trial(cls, organization):
-        trial_plan = SubscriptionPlan.objects.get(billing_cycle="FREE_TRIAL")
+        trial_plan = SubscriptionPlan.objects.filter(billing_cycle="FREE_TRIAL").first()
         start_date = timezone.now().date()
         end_date = start_date + timedelta(days=10)
 

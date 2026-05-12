@@ -1,0 +1,30 @@
+@import url("../../css/common/style.css");
+
+
+.breadcrumb-content {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb {
+    margin-bottom: 0;
+    background-color: var(--tertiary-color);
+    padding: 0.5rem;
+    border-radius: 0.2rem;
+}
+
+.breadcrumb-item {
+    color: var(--secondary-color);
+}
+
+@media (min-width: 768px) {
+    .dashboard-wrapper {
+        padding: 0.5rem;
+    }
+
+    .dashboard-content {
+        border-radius: 0.2rem;
+        padding: 0.5rem;
+    }
+}

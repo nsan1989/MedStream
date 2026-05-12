@@ -1,0 +1,123 @@
+@import url("../common/style.css");
+
+
+aside {
+    background-color: var(--primary-color);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 60px;
+    padding: 0 0.5rem;
+}
+
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    min-width: 20px;
+}
+
+.sidebar-toggle {
+    border: 0;
+    background: transparent;
+    color: var(--secondary-color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.layout-wrapper .sidebar-toggle-collapse {
+    display: none;
+}
+
+.layout-wrapper.sidebar-expanded .sidebar-toggle-expand {
+    display: none;
+}
+
+.layout-wrapper.sidebar-expanded .sidebar-toggle-collapse {
+    display: inline-flex;
+}
+
+.sidebar-menu {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+}
+
+.menu-item {
+    color: var(--secondary-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 40px;
+    border-radius: 8px;
+    padding: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: var(--secondary-color);
+}
+
+.menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    min-width: 20px;
+}
+
+.menu-name {
+    display: none;
+    white-space: nowrap;
+}
+
+.layout-wrapper.sidebar-expanded .menu-item,
+.sidebar-wrapper.expanded .menu-item {
+    justify-content: flex-start;
+}
+
+.layout-wrapper.sidebar-expanded .menu-name,
+.sidebar-wrapper.expanded .menu-name {
+    display: inline;
+}
+
+.layout-wrapper.sidebar-expanded .sidebar-top,
+.sidebar-wrapper.expanded .sidebar-top {
+    justify-content: flex-start;
+}
+
+.brand-icon {
+    display: none;
+    align-items: center;
+}
+
+.layout-wrapper.sidebar-expanded .brand-icon,
+.sidebar-wrapper.expanded .brand-icon {
+    display: flex;
+    width: auto;
+    height: auto;
+    margin: 0;
+    justify-content: flex-start;
+}
+
+.layout-wrapper.sidebar-expanded .brand-icon img,
+.sidebar-wrapper.expanded .brand-icon img {
+    width: 36px;
+    height: 36px;
+}
