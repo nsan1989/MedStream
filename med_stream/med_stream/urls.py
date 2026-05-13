@@ -23,4 +23,5 @@ urlpatterns = [
     path("", include("core.urls")),
     path("accounts/", include("accounts.urls")),
     path("accounts/", include("dashboard.urls")),
+    path("__reload__/", include("django_browser_reload.urls")),
 ]

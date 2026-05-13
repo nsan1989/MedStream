@@ -1,12 +1,5 @@
 @import url("../../css/common/style.css");
 
-
-.breadcrumb-content {
-    padding: 0.5rem 0;
-    display: flex;
-    align-items: center;
-}
-
 .breadcrumb {
     margin-bottom: 0;
     background-color: var(--tertiary-color);
@@ -16,9 +9,30 @@
 
 .breadcrumb-item {
     color: var(--secondary-color);
+    display: flex;
+    align-items: center;
 }
 
+/* Desktop styles */
 @media (min-width: 768px) {
+    .dashboard-wrapper {
+        padding: 0.5rem;
+    }
+
+    .dashboard-content {
+        border-radius: 0.2rem;
+        padding: 0.5rem;
+    }
+
+    .welcome-content h3 {
+        text-transform: uppercase;
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 767.99px) {
     .dashboard-wrapper {
         padding: 0.5rem;
     }

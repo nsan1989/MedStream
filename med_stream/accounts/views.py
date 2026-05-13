@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 
 
@@ -55,7 +55,12 @@ def authView(request):
                 if login_user is not None:
                     login(request, login_user)
                     messages.success(request, "Login successful.")
-                    return redirect("dashboard")
+                    if login_user.role == "SUPER_ADMIN":
+                        return redirect("super_admin_dashboard")
+                    elif login_user.role == "ADMIN":
+                        return redirect("admin_dashboard")
+                    else:
+                        return redirect("staff_dashboard")
 
                 messages.error(request, "Invalid credentials.")
             else:
@@ -67,3 +72,11 @@ def authView(request):
     }
 
     return render(request, "accounts/auth.html", context)
+
+
+# Logout view.
+def logoutView(request):
+    logout(request)
+
+    messages.success(request, "You have been logged out successfully.")
+    return redirect("login")

@@ -1,20 +1,34 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const layoutWrapper = document.querySelector(".layout-wrapper");
-    const expandBtn = document.querySelector(".sidebar-toggle-expand");
-    const collapseBtn = document.querySelector(".sidebar-toggle-collapse");
+    const sidebar = document.getElementById("sidebar");
+    const collapseBtn = document.getElementById("collapseSidebar");
+    const expandBtn = document.getElementById("expandSidebar");
 
-    if (!layoutWrapper) {
-        return;
+    // Collapse sidebar.
+    collapseBtn.addEventListener("click", function () {
+        sidebar.classList.add("collapsed");
+
+        collapseBtn.classList.add("hidden");
+        expandBtn.classList.remove("hidden");
+
+        localStorage.setItem("sidebarState", "collapsed");
+    });
+
+    // Expand sidebar.
+    expandBtn.addEventListener("click", function () {
+        sidebar.classList.remove("collapsed");
+
+        expandBtn.classList.add("hidden");
+        collapseBtn.classList.remove("hidden");
+
+        localStorage.setItem("sidebarState", "expanded");
+    });
+
+    // Restore sidebar state on page reload
+    const savedState = localStorage.getItem("sidebarState");
+
+    if (savedState === "collapsed") {
+        sidebar.classList.add("collapsed");
+        collapseBtn.classList.add("hidden");
+        expandBtn.classList.remove("hidden");
     }
-
-    function expandSidebar() {
-        layoutWrapper.classList.add("sidebar-expanded");
-    }
-
-    function collapseSidebar() {
-        layoutWrapper.classList.remove("sidebar-expanded");
-    }
-
-    expandBtn?.addEventListener("click", expandSidebar);
-    collapseBtn?.addEventListener("click", collapseSidebar);
 });

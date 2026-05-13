@@ -1,0 +1,72 @@
+{% extends "core/index.html" %}
+{% load static %}
+{% load bootstrap_icons %}
+
+{% block title %}
+  Dashboard
+{% endblock %}
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/dashboard/super_admin_style.css' %}">
+{% endblock %}
+
+{% block app_content %}
+  <div class="dashboard-wrapper">
+    <!--Breadcrumb content-->
+    <div class="breadcrumb-content">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="dashboard-content">
+      <div class="welcome-content">
+        <h3>welcome</h3>
+      </div>
+      <!--Desktop content-->
+      <div id="dashboard-card" class="row d-none d-md-flex">
+        <div class="col-md-3">
+          <!--Organization card-->
+          <div class="card">
+            <div class="card-body">
+              <div class="card-title">organization</div>
+              <div class="card-text">{{org|default:"0"}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <!--Facility card-->
+          <div class="card">
+            <div class="card-body">
+              <div class="card-title">facility</div>
+              <div class="card-text">{{fac|default:"0"}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--Mobile content-->
+      <div id="dashboard-card" class="row d-md-none">
+        <div class="col-12">
+          <!--Organization card-->
+          <div class="card">
+            <div class="card-body">
+              <div class="card-title">organization</div>
+              <div class="card-text">{{org|default:"0"}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <!--Facility card-->
+          <div class="card">
+            <div class="card-body">
+              <div class="card-title">facility</div>
+              <div class="card-text">{{fac|default:"0"}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
