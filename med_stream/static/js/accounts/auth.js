@@ -61,3 +61,176 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
 });
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+            const adminBtn = document.getElementById(
+                "showAdminRegister"
+            );
+
+            const staffBtn = document.getElementById(
+                "showStaffRegister"
+            );
+
+            const adminForm = document.getElementById(
+                "adminRegisterForm"
+            );
+
+            const staffForm = document.getElementById(
+                "staffRegisterForm"
+            );
+
+            adminBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+
+                adminForm.style.display = "block";
+                staffForm.style.display = "none";
+            });
+
+            staffBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+
+                adminForm.style.display = "none";
+                staffForm.style.display = "block";
+            });
+
+        });
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+    // ====================
+    // ADMIN OTP
+    // ====================
+
+    const sendAdminOTP =
+        document.getElementById(
+            "sendAdminOTP"
+        );
+
+    const adminOtpSection =
+        document.getElementById(
+            "adminOtpSection"
+        );
+
+    const verifyAdminOTP =
+        document.getElementById(
+            "verifyAdminOTP"
+        );
+
+    const adminRegisterBtn =
+        document.getElementById(
+            "adminRegisterBtn"
+        );
+
+    sendAdminOTP?.addEventListener(
+        "click",
+        async function () {
+
+        const phone =
+            document.getElementById(
+                "register_phone_number"
+            ).value;
+
+        if (!phone) {
+            alert(
+                "Enter phone number"
+            );
+            return;
+        }
+
+        const response =
+            await fetch(
+            "/accounts/send-otp/",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                    "application/json",
+                    "X-CSRFToken":
+                    getCSRFToken(),
+                },
+                body: JSON.stringify({
+                    phone_number:
+                    phone
+                }),
+            });
+
+        const data =
+            await response.json();
+
+        if (data.success) {
+
+            adminOtpSection
+                .style.display =
+                "block";
+
+            alert(
+                "OTP sent successfully"
+            );
+        }
+    });
+
+    verifyAdminOTP
+        ?.addEventListener(
+        "click",
+        async function () {
+
+        const otp =
+            document.getElementById(
+                "admin_otp"
+            ).value;
+
+        const phone =
+            document.getElementById(
+                "register_phone_number"
+            ).value;
+
+        const response =
+            await fetch(
+            "/accounts/verify-otp/",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                    "application/json",
+                    "X-CSRFToken":
+                    getCSRFToken(),
+                },
+                body: JSON.stringify({
+                    phone_number:
+                    phone,
+                    otp: otp,
+                }),
+            });
+
+        const data =
+            await response.json();
+
+        if (data.success) {
+
+            document
+                .getElementById(
+                "adminOtpVerified"
+            ).value = "true";
+
+            adminRegisterBtn
+                .disabled = false;
+
+            alert(
+                "Phone verified"
+            );
+        }
+    });
+
+});
+
+function getCSRFToken() {
+    return document
+        .querySelector(
+            "[name=csrfmiddlewaretoken]"
+        )
+        .value;
+}

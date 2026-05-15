@@ -1,0 +1,67 @@
+{% extends "core/index.html" %}
+{% load crispy_forms_tags %}
+{% load bootstrap_icons %}
+{% load static %}
+
+
+{% block title %}
+  Device List
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/device/device_list_style.css' %}">
+{% endblock %}
+
+
+{% block app_content %}
+<div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="device-content">
+      <div class="header-content">
+        <h3>device list</h3>
+      </div>
+      <div class="body-content table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-danger">
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Facility</th>
+              <th scope="col">Block</th>
+              <th scope="col">Floor</th>
+              <th scope="col">Device</th>
+              <th scope="col">IP Address</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody class="table-info">
+            {% if devices %}
+              {% for device in devices %}
+              <tr>
+                <td>{{device.name}}</td>
+                <td>{{device.facility}}</td>
+                <td>{{device.block}}</td>
+                <td>{{device.floor}}</td>
+                <td>{{device.device_type}}</td>
+                <td>{{device.ip_address}}</td>
+                <td>{{device.health.get_status_display}}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="100%">No device has been added yet!</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+{% endblock %}

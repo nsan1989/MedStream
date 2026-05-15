@@ -1,9 +1,11 @@
+from facilities.models import Facility
+
 MENU_ITEMS = {
     "SUPER_ADMIN": [
         {
             "icon": "house",
             "menu_name": "Dashboard",
-            "menu_link": "/accounts/dashboard/",
+            "menu_link": "/accounts/super_admin_dashboard/",
         },
         {
             "icon": "building",
@@ -15,6 +17,7 @@ MENU_ITEMS = {
             "menu_name": "Facilities",
             "menu_link": "/facilities/",
         },
+        {"icon": "wallet", "menu_name": "Revenue", "menu_link": "/revenue/"},
         {
             "icon": "person",
             "menu_name": "Profile",
@@ -30,12 +33,7 @@ MENU_ITEMS = {
         {
             "icon": "house",
             "menu_name": "Dashboard",
-            "menu_link": "/accounts/dashboard/",
-        },
-        {
-            "icon": "building",
-            "menu_name": "Organizations",
-            "menu_link": "/organizations/",
+            "menu_link": "/accounts/admin_dashboard/",
         },
         {
             "icon": "hospital",
@@ -45,44 +43,47 @@ MENU_ITEMS = {
         {
             "icon": "display",
             "menu_name": "Devices",
-            "menu_link": "/devices/",
+            "menu_link": "/device/all_devices/",
         },
         {
-            "icon": "calendar3",
-            "menu_name": "Schedules",
-            "menu_link": "/schedules/",
-        },
-        {
-            "icon": "collection-play",
-            "menu_name": "Broadcasting",
-            "menu_link": "/broadcasting/",
-        },
-        {
-            "icon": "exclamation-triangle",
-            "menu_name": "Emergency",
-            "menu_link": "/emergency/",
+            "icon": "people",
+            "menu_name": "Staff",
+            "menu_link": "/staff/",
         },
         {
             "icon": "person",
             "menu_name": "Profile",
             "menu_link": "/profile/",
+        },
+        {
+            "icon": "gear",
+            "menu_name": "Settings",
+            "sub_menu": [
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Staff",
+                    "menu_link": "/facility/settings/add_staff/",
+                },
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Facility",
+                    "menu_link": "/facility/settings/add_facility/",
+                },
+            ],
         },
     ],
     "STAFF": [
         {
             "icon": "house",
             "menu_name": "Dashboard",
-            "menu_link": "/accounts/dashboard/",
+            "menu_link": "/accounts/staff_dashboard/",
         },
-        {
-            "icon": "hospital",
-            "menu_name": "Facilities",
-            "menu_link": "/facilities/",
-        },
+        {"icon": "buildings", "menu_name": "Block", "menu_link": "/block/"},
+        {"icon": "layers", "menu_name": "Floor", "menu_link": "/floor/"},
         {
             "icon": "display",
             "menu_name": "Devices",
-            "menu_link": "/devices/",
+            "menu_link": "/device/all_devices/",
         },
         {
             "icon": "calendar3",
@@ -103,6 +104,27 @@ MENU_ITEMS = {
             "icon": "person",
             "menu_name": "Profile",
             "menu_link": "/profile/",
+        },
+        {
+            "icon": "gear",
+            "menu_name": "Settings",
+            "sub_menu": [
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Block",
+                    "menu_link": "/facility/settings/add_block/",
+                },
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Floor",
+                    "menu_link": "/facility/settings/add_floor/",
+                },
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Device",
+                    "menu_link": "/device/settings/add_device/",
+                },
+            ],
         },
     ],
 }

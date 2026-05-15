@@ -4,7 +4,7 @@
 
 
 {% block title %}
-
+    Authentication
 {% endblock %}
 
 {% block content %}
@@ -50,33 +50,232 @@
                 <!--on active-->
                     <div class="register-content">
                         <h2>Register Form</h2>
-                    <!--Register form-->
+                    <!--Register toggle-->
+                    <!-- Toggle Links -->
+                        <div class="register-switch mb-3 text-center">
+                            <a
+                                href="#"
+                                id="showAdminRegister"
+                                class="me-3 fw-bold text-decoration-none"
+                            >
+                                Register Organization
+                            </a>
+
+                            <a
+                                href="#"
+                                id="showStaffRegister"
+                                class="fw-bold text-decoration-none"
+                            >
+                                Register Staff
+                            </a>
+                        </div>
+                        <!--Register form wrapper-->
                         <div class="register-form-wrapper">
-                            <form action="{% url 'register' %}" method="post">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="register">
-                                <div class="mb-3">
-                                    <label for="organization_name" class="form-label">Organization Name</label>
-                                    <input type="text" class="form-control" id="organization_name" name="organization_name" aria-describedby="organizationNameHelp">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="organization_type" class="form-label">Organization Type</label>
-                                    <select class="form-select" id="organization_type" name="organization_type" aria-describedby="organizationTypeHelp">
-                                        {% for value, label in register_form.organization_type.field.choices %}
-                                            <option value="{{ value }}">{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="register_phone_number" class="form-label">Phone Number</label>
-                                    <input type="text" class="form-control" id="register_phone_number" name="phone_number" aria-describedby="registerPhoneHelp">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="register_password" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="register_password" name="password">
-                                </div>
-                                <button type="submit" class="btn btn-primary">Submit</button>
-                            </form>
+                            <!--Admin register form-->
+                            <div id="adminRegisterForm" class="register-form-wrapper">
+                                <form action="{% url 'register' %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="register">
+                                    <div class="mb-3">
+                                        <label for="organization_name" class="form-label">Organization Name</label>
+                                        <input type="text" class="form-control" id="organization_name" name="organization_name" aria-describedby="organizationNameHelp">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="organization_type" class="form-label">Organization Type</label>
+                                        <select class="form-select" id="organization_type" name="organization_type" aria-describedby="organizationTypeHelp">
+                                            {% for value, label in register_form.organization_type.field.choices %}
+                                                <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="register_phone_number" class="form-label">Phone Number</label>
+                                        <input type="text" class="form-control" id="register_phone_number" name="phone_number" aria-describedby="registerPhoneHelp">
+                                    </div>
+                                    <!-- Send OTP -->
+                                    <div class="mb-3">
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-primary w-100"
+                                            id="sendAdminOTP"
+                                        >
+                                            Send OTP
+                                        </button>
+                                    </div>
+                                    <!-- OTP Section (Hidden Initially) -->
+                                    <div
+                                        id="adminOtpSection"
+                                        style="display: none;"
+                                    >
+                                        <div class="mb-3">
+                                            <label
+                                                for="admin_otp"
+                                                class="form-label"
+                                            >
+                                                Enter OTP
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="admin_otp"
+                                                maxlength="6"
+                                                placeholder="Enter OTP"
+                                            >
+                                        </div>
+                                        <div class="mb-3">
+                                            <button
+                                                type="button"
+                                                class="btn btn-success w-100"
+                                                id="verifyAdminOTP"
+                                            >
+                                                Verify OTP
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Hidden Field -->
+                                    <input
+                                        type="hidden"
+                                        name="otp_verified"
+                                        id="adminOtpVerified"
+                                        value="false"
+                                    >
+                                    <div class="mb-3">
+                                        <label for="register_password" class="form-label">Password</label>
+                                        <input type="password" class="form-control" id="register_password" name="password">
+                                    </div>
+                                    <button type="submit" class="btn btn-success w-100">Register Org.</button>
+                                </form>
+                            </div>
+                            <!--Staff register form-->
+                            <div
+                                id="staffRegisterForm"
+                                style="display: none;"
+                            >
+                                <form action="{% url 'register' %}" method="post">
+                                    {% csrf_token %}
+
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="staff_register"
+                                    >
+
+                                    <div class="mb-3">
+                                        <label
+                                            for="organization"
+                                            class="form-label"
+                                        >
+                                            Organization
+                                        </label>
+
+                                        <select
+                                            class="form-select"
+                                            id="organization"
+                                            name="organization"
+                                        >
+                                            <option value="">
+                                                Select Organization
+                                            </option>
+                                            {% for org in organizations %}
+                                                <option value="{{ org.id }}">
+                                                    {{ org.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label
+                                            for="staff_phone_number"
+                                            class="form-label"
+                                        >
+                                            Phone Number
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="staff_phone_number"
+                                            name="phone_number"
+                                        >
+                                    </div>
+
+                                    <!-- Send OTP -->
+                                    <div class="mb-3">
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-primary w-100"
+                                            id="sendAdminOTP"
+                                        >
+                                            Send OTP
+                                        </button>
+                                    </div>
+
+                                    <!-- OTP Section (Hidden Initially) -->
+                                    <div
+                                        id="adminOtpSection"
+                                        style="display: none;"
+                                    >
+                                        <div class="mb-3">
+                                            <label
+                                                for="admin_otp"
+                                                class="form-label"
+                                            >
+                                                Enter OTP
+                                            </label>
+
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="admin_otp"
+                                                maxlength="6"
+                                                placeholder="Enter OTP"
+                                            >
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <button
+                                                type="button"
+                                                class="btn btn-success w-100"
+                                                id="verifyAdminOTP"
+                                            >
+                                                Verify OTP
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hidden Field -->
+                                    <input
+                                        type="hidden"
+                                        name="otp_verified"
+                                        id="adminOtpVerified"
+                                        value="false"
+                                    >
+
+                                    <div class="mb-3">
+                                        <label
+                                            for="staff_password"
+                                            class="form-label"
+                                        >
+                                            Password
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            class="form-control"
+                                            id="staff_password"
+                                            name="password"
+                                        >
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-success w-100"
+                                    >
+                                        Register Staff
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 <!--not active-->

@@ -73,6 +73,22 @@
     color: var(--secondary-color);
 }
 
+.menu-group button {
+    background: transparent !important;
+    color: var(--secondary-color);
+    border: none !important;
+}
+
+.submenu a {
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.submenu a:hover {
+    background-color: var(--tertiary-color);
+    color: var(--secondary-color);
+}
+
 .brand-name {
     color: var(--secondary-color);
     font-weight: bold;

@@ -31,10 +31,60 @@
     </div>
     <nav class="sidebar-menu" aria-label="Primary navigation">
         {% for item in menu_items %}
-            <a class="menu-item" href="{{ item.menu_link }}">
-                <span class="menu-icon" aria-hidden="true">{% bs_icon item.icon size='1em' %}</span>
-                <span class="menu-name">{{ item.menu_name }}</span>
-            </a>
+            {% if item.sub_menu %}
+            <!-- Parent Menu -->
+                <div class="menu-group">
+                    <button
+                        class="menu-item menu-toggle"
+                        type="button"
+                        onclick="toggleSubMenu('submenu-{{ forloop.counter }}')"
+                    >
+                        <span class="menu-icon" aria-hidden="true">
+                            {% bs_icon item.icon size='1em' %}
+                        </span>
+
+                        <span class="menu-name">
+                            {{ item.menu_name }}
+                        </span>
+
+                        <span class="ms-auto">
+                            ▾
+                        </span>
+                    </button>
+
+                <!-- Submenu -->
+                    <div
+                        id="submenu-{{ forloop.counter }}"
+                        class="submenu"
+                        style="display: none;"
+                    >
+                        {% for sub in item.sub_menu %}
+                            <a
+                                class="menu-item submenu-item"
+                                href="{{ sub.menu_link }}"
+                            >
+                                <span>
+                                    {% bs_icon sub.icon size='1em' %}
+                                </span>
+                                <span class="menu-name">
+                                    {{ sub.menu_name }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+            <!-- Normal Menu -->
+                <a class="menu-item" href="{{ item.menu_link }}">
+                    <span class="menu-icon" aria-hidden="true">
+                        {% bs_icon item.icon size='1em' %}
+                    </span>
+
+                    <span class="menu-name">
+                        {{ item.menu_name }}
+                    </span>
+                </a>
+            {% endif %}
         {% endfor %}
     </nav>
     <div class="sidebar-bottom">
@@ -57,4 +107,16 @@
 
 {% block extra_js %}
     <script src="{% static 'js/core/sidebar.js' %}"></script>
+
+    <script>
+        function toggleSubMenu(id) {
+            const submenu = document.getElementById(id);
+
+            if (submenu.style.display === "none") {
+                submenu.style.display = "block";
+            } else {
+                submenu.style.display = "none";
+            }
+        }
+    </script>
 {% endblock %}

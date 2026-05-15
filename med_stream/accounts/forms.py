@@ -35,7 +35,9 @@ class RegisterForm(forms.Form):
     def clean_organization_name(self):
         organization_name = self.cleaned_data.get("organization_name", "").strip()
         if Organization.objects.filter(name__iexact=organization_name).exists():
-            raise forms.ValidationError("An organization with this name already exists.")
+            raise forms.ValidationError(
+                "An organization with this name already exists."
+            )
         return organization_name
 
     def clean_phone_number(self):
@@ -77,6 +79,70 @@ class RegisterForm(forms.Form):
             )
 
             OrganizationSubscription.create_free_trial(organization)
+
+        return user
+
+
+# Staff registration form.
+class StaffRegisterForm(forms.Form):
+    organization = forms.ModelChoiceField(
+        queryset=Organization.objects.filter(is_active=True),
+        required=True,
+        empty_label="Select Organization",
+    )
+    phone_number = forms.CharField(max_length=15, required=True)
+    password = forms.CharField(widget=forms.PasswordInput, required=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for fieldname in [
+            "organization",
+            "phone_number",
+            "password",
+        ]:
+            self.fields[fieldname].help_text = None
+
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data.get("phone_number")
+
+        if CustomUser.objects.filter(phone_number=phone_number).exists():
+            raise forms.ValidationError("A user with this phone number already exists.")
+
+        return phone_number
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+
+        if not re.fullmatch(
+            r"^[A-Za-z0-9@&!]+$",
+            password,
+        ):
+            raise ValidationError(
+                "Password can contain only letters, numbers, and '@&!'."
+            )
+
+        if len(password) < 6:
+            raise ValidationError("Password must be at least 6 characters long.")
+
+        return password
+
+    def save(self):
+        with transaction.atomic():
+            organization = self.cleaned_data["organization"]
+
+            user = CustomUser.objects.create_user(
+                phone_number=self.cleaned_data["phone_number"],
+                password=self.cleaned_data["password"],
+                role=UserRole.STAFF,
+                organization=organization,
+            )
+
+            OrganizationMember.objects.create(
+                organization=organization,
+                member=user,
+                is_active=True,
+            )
 
         return user
 

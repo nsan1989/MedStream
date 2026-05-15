@@ -14,6 +14,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         blank=True,
         related_name="users",
     )
+    facility = models.ForeignKey(
+        "facilities.Facility",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="users",
+    )
     phone_number = models.CharField(max_length=15, unique=True)
     firstname = models.CharField(max_length=255, blank=True)
     lastname = models.CharField(max_length=255, blank=True)

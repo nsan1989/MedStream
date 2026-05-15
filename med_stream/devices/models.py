@@ -3,7 +3,7 @@ import uuid
 
 from django.db import models
 from core.models import TimeStampedModel
-from facilities.models import Floor
+from facilities.models import Facility, Block, Floor
 from .enums import DeviceType, DeviceStatus, OrientationChoices, LogType
 
 
@@ -11,7 +11,23 @@ from .enums import DeviceType, DeviceStatus, OrientationChoices, LogType
 class Device(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
-    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name="devices")
+    facility = models.ForeignKey(
+        Facility,
+        on_delete=models.CASCADE,
+        related_name="facility_device",
+        null=True,
+        blank=True,
+    )
+    block = models.ForeignKey(
+        Block,
+        on_delete=models.CASCADE,
+        related_name="block_device",
+        null=True,
+        blank=True,
+    )
+    floor = models.ForeignKey(
+        Floor, on_delete=models.CASCADE, related_name="floor_device"
+    )
     device_type = models.CharField(
         max_length=20, choices=DeviceType.choices, default=DeviceType.TV
     )
@@ -46,7 +62,9 @@ class DeviceLog(TimeStampedModel):
 # Device health model.
 class DeviceHealth(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="health")
+    device = models.OneToOneField(
+        Device, on_delete=models.CASCADE, related_name="health"
+    )
     status = models.CharField(
         max_length=20, choices=DeviceStatus.choices, default=DeviceStatus.ACTIVE
     )
