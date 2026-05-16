@@ -1,0 +1,61 @@
+{% extends "core/index.html" %}
+{% load crispy_forms_tags %}
+{% load bootstrap_icons %}
+{% load static %}
+
+
+{% block title %}
+  Add Floor
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/facility/floor_list.css' %}">
+{% endblock %}
+
+
+{% block app_content %}
+  <div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+          <!-- Current Page -->
+          <li class="breadcrumb-item active" aria-current="page">
+            <small>Floors</small>
+          </li>
+        </ol>
+      </nav>
+    </div>
+    <div class="floor-list-wrapper">
+      <div class="floor-list-header mb-3">
+        <h3>floor list</h3>
+      </div>
+      <div class="floor-list-content table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-danger">
+            <tr>
+              <th scope="col">Block</th>
+              <th scope="col">Name</th>
+            </tr>
+          </thead>
+          <tbody class="table-info">
+            {% if floors %}
+              {% for f in floors %}
+                <tr>
+                  <td>{{f.block.name}}</td>
+                  <td>{{f.name}}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="100%">No floor have been added yet.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

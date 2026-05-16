@@ -1,0 +1,61 @@
+{% extends "core/index.html" %}
+{% load crispy_forms_tags %}
+{% load bootstrap_icons %}
+{% load static %}
+
+
+{% block title %}
+  Add Block
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/facility/block_list.css' %}">
+{% endblock %}
+
+
+{% block app_content %}
+  <div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+          <!-- Current Page -->
+          <li class="breadcrumb-item active" aria-current="page">
+            <small>Blocks</small>
+          </li>
+        </ol>
+      </nav>
+    </div>
+    <div class="block-list-wrapper">
+      <div class="block-list-header mb-3">
+        <h3>block list</h3>
+      </div>
+      <div class="block-list-content table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-danger">
+            <tr>
+              <th scope="col">Facility</th>
+              <th scope="col">Name</th>
+            </tr>
+          </thead>
+          <tbody class="table-info">
+            {% if blocks %}
+              {% for b in blocks %}
+                <tr>
+                  <td>{{b.facility.name}}</td>
+                  <td>{{b.name}}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="100%">No block have been added yet.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

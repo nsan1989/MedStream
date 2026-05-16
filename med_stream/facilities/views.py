@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from .forms import BlockForm, FloorForm, FacilityForm, StaffForm
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from .models import Block, Floor, Facility
 
 
 # Add staff view.
@@ -115,3 +116,29 @@ def AddFloor(request):
     }
 
     return render(request, "facility/add_floor.html", context)
+
+
+# Block list view.
+@login_required
+def BlockList(request):
+
+    user = request.user
+    block_list = Block.objects.filter(facility=user.facility, facility__is_active=True)
+
+    context = {"blocks": block_list}
+
+    return render(request, "facility/block_list.html", context)
+
+
+# Floor list view.
+@login_required
+def FloorList(request):
+
+    user = request.user
+    floor_list = Floor.objects.filter(
+        block__facility=user.facility, block__facility__is_active=True
+    )
+
+    context = {"floors": floor_list}
+
+    return render(request, "facility/floor_list.html", context)

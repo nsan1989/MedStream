@@ -1,35 +1,54 @@
+import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
-from core.models import TimeStampedModel, Department
+from core.models import TimeStampedModel
 from organizations.models import Organization
 from facilities.models import Facility
 
 
+# Department model.
+class Department(TimeStampedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, null=True, blank=True
+    )
+    name = models.CharField(max_length=255)
+
+    def clean(self):
+        super().clean()
+
+        dept_qs = Department.objects.filter(name__iexact=self.name)
+        if self.pk:
+            dept_qs = dept_qs.exclude(pk=self.pk)
+        if dept_qs.exists():
+            raise ValidationError(
+                {"name": "A department with this name already exists."}
+            )
+
+    def __str__(self):
+        return self.name
+
+
 # Doctor model.
 class Doctor(TimeStampedModel):
-    user = models.OneToOneField(
-        "accounts.CustomUser",
-        on_delete=models.CASCADE,
-        related_name="doctor_profile",
-    )
-    department = models.ForeignKey(
-        Department, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
-        Organization,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="doctors",
+        Organization, on_delete=models.CASCADE, null=True, blank=True
     )
-    specialization = models.CharField(max_length=255, blank=True)
+    facility = models.ForeignKey(Facility, models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=200, null=True, blank=True)
+    department = models.ForeignKey(
+        Department, on_delete=models.CASCADE, null=True, blank=True
+    )
+    qualification = models.CharField(max_length=255, blank=True)
+    experience = models.CharField(max_length=200, blank=True)
     is_active = models.BooleanField(default=True)
 
     def clean(self):
         super().clean()
 
         doctor_qs = Doctor.objects.filter(
-            user=self.user, organization=self.organization
+            name=self.name, organization=self.organization, facility=self.facility
         )
         if self.pk:
             doctor_qs = doctor_qs.exclude(pk=self.pk)
@@ -67,9 +86,7 @@ class OPDRoom(TimeStampedModel):
         if self.organization and self.facility:
             if self.facility.organization_id != self.organization_id:
                 raise ValidationError(
-                    {
-                        "facility": "Facility must belong to the selected organization."
-                    }
+                    {"facility": "Facility must belong to the selected organization."}
                 )
 
         room_qs = OPDRoom.objects.filter(

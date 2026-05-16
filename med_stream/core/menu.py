@@ -78,8 +78,8 @@ MENU_ITEMS = {
             "menu_name": "Dashboard",
             "menu_link": "/accounts/staff_dashboard/",
         },
-        {"icon": "buildings", "menu_name": "Block", "menu_link": "/block/"},
-        {"icon": "layers", "menu_name": "Floor", "menu_link": "/floor/"},
+        {"icon": "buildings", "menu_name": "Block", "menu_link": "/facility/blocks/"},
+        {"icon": "layers", "menu_name": "Floor", "menu_link": "/facility/floors/"},
         {
             "icon": "display",
             "menu_name": "Devices",
@@ -109,6 +109,26 @@ MENU_ITEMS = {
             "icon": "gear",
             "menu_name": "Settings",
             "sub_menu": [
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Department",
+                    "menu_link": "/schedule/settings/add_department/",
+                },
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Doctor",
+                    "menu_link": "/schedule/settings/add_doctor/",
+                },
+                {
+                    "icon": "plus",
+                    "menu_name": "Add OPD",
+                    "menu_link": "/opd_schedule/",
+                },
+                {
+                    "icon": "plus",
+                    "menu_name": "Add Doctor Schedule",
+                    "menu_link": "/doctor_schedule/",
+                },
                 {
                     "icon": "plus",
                     "menu_name": "Add Block",

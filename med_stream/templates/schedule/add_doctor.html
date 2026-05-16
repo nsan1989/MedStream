@@ -1,0 +1,95 @@
+{% extends "core/index.html" %}
+{% load crispy_forms_tags %}
+{% load bootstrap_icons %}
+{% load static %}
+
+
+{% block title %}
+    Add Doctor
+{% endblock %}
+
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/schedule/add_doctor.css' %}">
+{% endblock %}
+
+
+{% block app_content %}
+    <div class="container-fluid w-100">
+        <div class="breadcrumb-content mb-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+          <!-- Current Page -->
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <small>Add Doctor</small>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+        <div class="add-doctor-wrapper">
+            <div class="form-heading mb-3">
+                <h3>add doctor</h3>
+            </div>
+            <div class="form-wrapper">
+                <form action="{% url 'add_doctor' %}" method="post">
+                    {% csrf_token %}
+                    {{form|crispy}}
+                    <button type="submit" class="btn btn-primary">
+                        Add Doctor
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const facility = document.getElementById("id_facility");
+
+                const department = document.getElementById("id_department");
+
+                facility.addEventListener("change", function () {
+                    department.innerHTML = '<option value="">Select Department</option>';
+                    fetch(
+                        `{% url 'ajax_load_departments' %}?organization_id={{ request.user.organization.id }}`
+                    )
+                        .then(response =>
+                            response.json()
+                        )
+                        .then(data => {
+
+                            data.departments.forEach(
+                                item => {
+
+                                    const option =
+                                        document.createElement(
+                                            "option"
+                                        );
+
+                                    option.value =
+                                        item.id;
+
+                                    option.textContent =
+                                        item.name;
+
+                                    department.appendChild(
+                                        option
+                                    );
+                                });
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+                );
+            }
+        );
+    </script>
+{% endblock %}
