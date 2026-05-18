@@ -11,7 +11,8 @@
 
 {% block extra_css %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/device/device_style.css' %}">
+  <link rel="preload" href="{% static 'css/device/device_style.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/device/device_style.css' %}"></noscript>
 {% endblock %}
 
 
@@ -21,6 +22,10 @@
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
           <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+          <!-- Current Page -->
+          <li class="breadcrumb-item active" aria-current="page">
+            <small>Add Device</small>
+          </li>
         </ol>
       </nav>
     </div>

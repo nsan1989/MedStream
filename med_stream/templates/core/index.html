@@ -2,7 +2,20 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/core/index.css' %}">
+    <link
+        rel="preload"
+        href="{% static 'css/core/index.css' %}"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'"
+    >
+    <noscript><link rel="stylesheet" href="{% static 'css/core/index.css' %}"></noscript>
+    <link
+        rel="preload"
+        href="{% static 'css/core/sidebar.css' %}"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'"
+    >
+    <noscript><link rel="stylesheet" href="{% static 'css/core/sidebar.css' %}"></noscript>
 {% endblock %}
 
 {% block content %}

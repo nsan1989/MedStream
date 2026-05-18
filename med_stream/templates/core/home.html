@@ -17,5 +17,6 @@
 {% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/core/home.css' %}">
+    <link rel="preload" href="{% static 'css/core/home.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/core/home.css' %}"></noscript>
 {% endblock %}

@@ -1,0 +1,73 @@
+{% extends "core/index.html" %}
+{% load bootstrap_icons %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+  Broadcasts
+{% endblock %}
+
+{% block app_content %}
+  <div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+          <li class="breadcrumb-item active" aria-current="page"><small>Broadcasts</small></li>
+        </ol>
+      </nav>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="text-uppercase">Play On Device</h3>
+      <div class="card mb-4">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            {{ playback_form|crispy }}
+            <button type="submit" class="btn btn-primary">Send Play Command</button>
+          </form>
+        </div>
+      </div>
+
+      <h3 class="text-uppercase">Broadcast Sessions</h3>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-danger">
+            <tr>
+              <th scope="col">Organization</th>
+              <th scope="col">Facility</th>
+              <th scope="col">Device</th>
+              <th scope="col">Doctor</th>
+              <th scope="col">OPD Room</th>
+              <th scope="col">Layout</th>
+              <th scope="col">Started</th>
+              <th scope="col">Ended</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody class="table-info">
+            {% if broadcasts %}
+              {% for item in broadcasts %}
+                <tr>
+                  <td>{{ item.organization.name|default:"-" }}</td>
+                  <td>{{ item.facility.name|default:"-" }}</td>
+                  <td>{{ item.device.name|default:"-" }}</td>
+                  <td>{{ item.doctor_schedule.doctor.name|default:"-" }}</td>
+                  <td>{{ item.opdschedule.opd_room.name|default:"-" }}</td>
+                  <td>{{ item.layout.name|default:"-" }}</td>
+                  <td>{{ item.started_at }}</td>
+                  <td>{{ item.ended_at|default:"-" }}</td>
+                  <td>{{ item.get_status_display }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="9">No broadcast sessions found.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -8,7 +8,8 @@
 
 {% block extra_css %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/dashboard/super_admin_style.css' %}">
+  <link rel="preload" href="{% static 'css/dashboard/super_admin_style.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/dashboard/super_admin_style.css' %}"></noscript>
 {% endblock %}
 
 {% block app_content %}

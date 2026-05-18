@@ -5,13 +5,14 @@
 
 
 {% block title %}
-  Add Block
+  Block List
 {% endblock %}
 
 
 {% block extra_css %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/facility/block_list.css' %}">
+  <link rel="preload" href="{% static 'css/facility/block_list.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/facility/block_list.css' %}"></noscript>
 {% endblock %}
 
 

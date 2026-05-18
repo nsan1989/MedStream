@@ -29,11 +29,12 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    cast=lambda v: [s.strip() for s in v.split(",")],
-    default="127.0.0.1,localhost",
-)
+# ALLOWED_HOSTS = config(
+#    "ALLOWED_HOSTS",
+#    cast=lambda v: [s.strip() for s in v.split(",")],
+#    default="127.0.0.1,localhost",
+# )
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -71,6 +72,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "core.middleware.RequestTimingMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

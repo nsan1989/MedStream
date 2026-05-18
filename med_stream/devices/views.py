@@ -1,13 +1,22 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 from .forms import DeviceForm
 from django.core.exceptions import PermissionDenied
 from accounts.enums import UserRole
 from facilities.models import Block, Floor
 from django.http import JsonResponse
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
+import json
 from .models import Device
+from .models import DeviceLog
+from .enums import LogType
 
 
 # Add device form.
+@login_required
 def AddDevice(request):
 
     user = request.user
@@ -22,9 +31,9 @@ def AddDevice(request):
             form.save()
 
             if user.role == "ADMIN":
-                return redirect()
+                return redirect("devices")
             elif user.role == "STAFF":
-                return redirect()
+                return redirect("devices")
 
     else:
         form = DeviceForm(user=user)
@@ -34,6 +43,7 @@ def AddDevice(request):
 
 
 # Device list view.
+@login_required
 def DeviceListView(request):
     user = request.user
 
@@ -73,6 +83,7 @@ def DeviceListView(request):
 
 
 # Load blocks.
+@login_required
 def load_blocks(request):
     facility_id = request.GET.get("facility_id")
 
@@ -93,6 +104,7 @@ def load_blocks(request):
 
 
 # Load floors.
+@login_required
 def load_floors(request):
     block_id = request.GET.get("block_id")
 
@@ -110,3 +122,81 @@ def load_floors(request):
         data,
         safe=False,
     )
+
+
+# Device player: pull latest play command.
+@require_GET
+def DeviceNextCommand(request, device_id):
+    device = get_object_or_404(Device, id=device_id, is_active=True)
+
+    # Optional simple check: caller IP should match the registered device IP.
+    remote_ip = request.META.get("REMOTE_ADDR")
+    if (
+        remote_ip
+        and remote_ip not in ["127.0.0.1", "::1"]
+        and remote_ip != device.ip_address
+    ):
+        return JsonResponse({"detail": "IP mismatch for device."}, status=403)
+
+    logs = DeviceLog.objects.filter(device=device, log_type=LogType.INFO).order_by(
+        "-created_at"
+    )[:50]
+
+    command_log = None
+    for log in logs:
+        metadata = log.metadata or {}
+        if metadata.get("command") == "PLAY" and not metadata.get("executed", False):
+            command_log = log
+            break
+
+    if not command_log:
+        return JsonResponse({"command": None, "detail": "No pending play command."})
+
+    return JsonResponse(
+        {
+            "command_id": str(command_log.id),
+            "device_id": str(device.id),
+            "device_name": device.name,
+            "payload": command_log.metadata or {},
+            "created_at": command_log.created_at.isoformat(),
+        }
+    )
+
+
+# Device player: acknowledge command execution.
+@csrf_exempt
+@require_POST
+def DeviceCommandAck(request, device_id):
+    device = get_object_or_404(Device, id=device_id, is_active=True)
+
+    try:
+        body = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON payload."}, status=400)
+
+    command_id = body.get("command_id")
+    status = body.get("status", "ACK")
+    message = body.get("message", "")
+
+    DeviceLog.objects.create(
+        device=device,
+        log_type=LogType.INFO,
+        message="Playback command acknowledged",
+        metadata={
+            "command": "ACK",
+            "command_id": command_id,
+            "status": status,
+            "message": message,
+            "ack_at": timezone.now().isoformat(),
+        },
+    )
+
+    return JsonResponse({"ok": True})
+
+
+# Device-side player page.
+@require_GET
+def DevicePlayerPage(request, device_id):
+    device = get_object_or_404(Device, id=device_id, is_active=True)
+    context = {"device": device}
+    return render(request, "device/player.html", context)

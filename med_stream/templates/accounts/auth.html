@@ -298,7 +298,8 @@
 {% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/accounts/auth.css' %}">
+    <link rel="preload" href="{% static 'css/accounts/auth.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/accounts/auth.css' %}"></noscript>
 {% endblock %}
 
 {% block extra_js %}

@@ -1,7 +1,14 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import DepartmentForm, DoctorForm
-from .models import Department
+from django.contrib import messages
+from .forms import (
+    DepartmentForm,
+    DoctorForm,
+    OPDRoomForm,
+    OPDScheduleForm,
+    DoctorScheduleForm,
+)
+from .models import Department, OPDRoom, OPDSchedule, DoctorSchedule as DoctorScheduleModel
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 
@@ -92,3 +99,178 @@ def load_departments(request):
     ]
 
     return JsonResponse({"departments": department_data})
+
+
+# OPD room.
+@login_required
+def OpdRoom(request):
+
+    user = request.user
+
+    if user.role not in [
+        "ADMIN",
+        "STAFF",
+    ]:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = OPDRoomForm(request.POST, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "OPD room added successfully.")
+
+            if user.role == "ADMIN":
+                return redirect("admin_dashboard")
+            return redirect("staff_dashboard")
+    else:
+        form = OPDRoomForm(user=user)
+
+    context = {"form": form}
+
+    return render(request, "schedule/add_opd_room.html", context)
+
+
+# OPD Schedule.
+@login_required
+def OpdSchedule(request):
+    user = request.user
+
+    if user.role not in [
+        "ADMIN",
+        "STAFF",
+    ]:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = OPDScheduleForm(request.POST, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "OPD schedule added successfully.")
+
+            if user.role == "ADMIN":
+                return redirect("admin_dashboard")
+            return redirect("staff_dashboard")
+    else:
+        form = OPDScheduleForm(user=user)
+
+    context = {"form": form}
+
+    return render(request, "schedule/add_opd_schedule.html", context)
+
+
+# Doctor Schedule.
+@login_required
+def DoctorSchedule(request):
+    user = request.user
+
+    if user.role not in [
+        "ADMIN",
+        "STAFF",
+    ]:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = DoctorScheduleForm(request.POST, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Doctor schedule added successfully.")
+
+            if user.role == "ADMIN":
+                return redirect("admin_dashboard")
+            return redirect("staff_dashboard")
+    else:
+        form = DoctorScheduleForm(user=user)
+
+    context = {"form": form}
+
+    return render(request, "schedule/add_doctor_schedule.html", context)
+
+
+# Schedules view.
+@login_required
+def SchedulesView(request):
+    user = request.user
+
+    if user.role not in [
+        "ADMIN",
+        "STAFF",
+    ]:
+        raise PermissionDenied
+
+    opd_rooms = OPDRoom.objects.none()
+    opd_schedules = OPDSchedule.objects.none()
+    doctor_schedules = DoctorScheduleModel.objects.none()
+
+    if user.role == "ADMIN":
+        opd_rooms = (
+            OPDRoom.objects.filter(
+                organization=user.organization,
+                is_active=True,
+            )
+            .select_related("organization", "facility")
+            .order_by("facility__name", "name")
+        )
+        opd_schedules = (
+            OPDSchedule.objects.filter(
+                doctor__organization=user.organization,
+                opd_room__organization=user.organization,
+            )
+            .select_related(
+                "doctor",
+                "doctor__facility",
+                "opd_room",
+            )
+            .order_by("day_of_week", "start_time")
+        )
+        doctor_schedules = (
+            DoctorScheduleModel.objects.filter(
+                doctor__organization=user.organization,
+            )
+            .select_related(
+                "doctor",
+                "doctor__facility",
+            )
+            .order_by("day_of_week", "start_time")
+        )
+    elif user.role == "STAFF":
+        opd_rooms = (
+            OPDRoom.objects.filter(
+                organization=user.organization,
+                facility=user.facility,
+                is_active=True,
+            )
+            .select_related("organization", "facility")
+            .order_by("name")
+        )
+        opd_schedules = (
+            OPDSchedule.objects.filter(
+                doctor__organization=user.organization,
+                doctor__facility=user.facility,
+                opd_room__facility=user.facility,
+            )
+            .select_related(
+                "doctor",
+                "doctor__facility",
+                "opd_room",
+            )
+            .order_by("day_of_week", "start_time")
+        )
+        doctor_schedules = (
+            DoctorScheduleModel.objects.filter(
+                doctor__organization=user.organization,
+                doctor__facility=user.facility,
+            )
+            .select_related(
+                "doctor",
+                "doctor__facility",
+            )
+            .order_by("day_of_week", "start_time")
+        )
+
+    context = {
+        "opd_rooms": opd_rooms,
+        "opd_schedules": opd_schedules,
+        "doctor_schedules": doctor_schedules,
+    }
+
+    return render(request, "schedule/schedules.html", context)

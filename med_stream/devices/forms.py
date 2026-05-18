@@ -97,7 +97,7 @@ class DeviceForm(forms.ModelForm):
 
             if "block" in self.data:
                 try:
-                    block_id = int(self.data.get("block"))
+                    block_id = self.data.get("block")
 
                     self.fields["floor"].queryset = Floor.objects.filter(
                         block_id=block_id,

@@ -58,7 +58,16 @@ class Doctor(TimeStampedModel):
             )
 
     def __str__(self):
-        return f"{self.user.firstname} {self.user.lastname} - {self.specialization}"
+        name = (self.name or "").strip()
+        dept_name = self.department.name if self.department else ""
+
+        if name and dept_name:
+            return f"{name} - {dept_name}"
+        if name:
+            return name
+        if dept_name:
+            return dept_name
+        return f"Doctor {self.pk}"
 
 
 # OPD Room model.

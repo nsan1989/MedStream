@@ -15,6 +15,13 @@ class Playlist(TimeStampedModel):
         blank=True,
         related_name="playlists",
     )
+    facility = models.ForeignKey(
+        "facilities.Facility",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="playlists",
+    )
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(
         CustomUser,
@@ -36,11 +43,34 @@ class Playlist(TimeStampedModel):
     def clean(self):
         super().clean()
 
+        if self.created_by and not self.organization:
+            raise ValidationError(
+                {
+                    "organization": (
+                        "Organization is required when a creator is assigned."
+                    )
+                }
+            )
+
         if self.created_by and self.organization:
             if self.created_by.organization_id != self.organization_id:
                 raise ValidationError(
                     {"created_by": "Creator must belong to the selected organization."}
                 )
+
+        if self.organization and self.facility:
+            if self.facility.organization_id != self.organization_id:
+                raise ValidationError(
+                    {
+                        "facility": (
+                            "Facility must belong to the selected organization."
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -73,6 +103,12 @@ class PlaylistItem(TimeStampedModel):
     def clean(self):
         super().clean()
 
+        if self.order < 0:
+            raise ValidationError({"order": "Order must be zero or greater."})
+
+        if self.duration <= 0:
+            raise ValidationError({"duration": "Duration must be greater than zero."})
+
         playlist_org_id = self.playlist.organization_id
         media_org_id = self.media_asset.organization_id
         if playlist_org_id and media_org_id and playlist_org_id != media_org_id:
@@ -83,6 +119,20 @@ class PlaylistItem(TimeStampedModel):
                     )
                 }
             )
+
+        if self.playlist.facility_id and self.media_asset.facility_id:
+            if self.media_asset.facility_id != self.playlist.facility_id:
+                raise ValidationError(
+                    {
+                        "media_asset": (
+                            "Media asset must belong to the same facility as the playlist."
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.playlist.name} - {self.media_asset.title}"

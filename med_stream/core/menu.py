@@ -88,10 +88,20 @@ MENU_ITEMS = {
         {
             "icon": "calendar3",
             "menu_name": "Schedules",
-            "menu_link": "/schedules/",
+            "menu_link": "/schedule/all_schedules/",
         },
         {
             "icon": "collection-play",
+            "menu_name": "Media",
+            "menu_link": "/media/media_list/",
+        },
+        {
+            "icon": "play",
+            "menu_name": "Playlist",
+            "menu_link": "/playlist/all_playlist/",
+        },
+        {
+            "icon": "megaphone",
             "menu_name": "Broadcasting",
             "menu_link": "/broadcasting/",
         },
@@ -118,16 +128,6 @@ MENU_ITEMS = {
                     "icon": "plus",
                     "menu_name": "Add Doctor",
                     "menu_link": "/schedule/settings/add_doctor/",
-                },
-                {
-                    "icon": "plus",
-                    "menu_name": "Add OPD",
-                    "menu_link": "/opd_schedule/",
-                },
-                {
-                    "icon": "plus",
-                    "menu_name": "Add Doctor Schedule",
-                    "menu_link": "/doctor_schedule/",
                 },
                 {
                     "icon": "plus",

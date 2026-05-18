@@ -1,0 +1,31 @@
+
+.breadcrumb {
+    margin-bottom: 0;
+    background-color: var(--tertiary-color);
+    padding: 0.5rem;
+    border-radius: 0.2rem;
+    width: fit-content;
+}
+
+.breadcrumb-item {
+    color: var(--secondary-color);
+    width: fit-content;
+    display: flex;
+    align-items: center;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.content-title h3 {
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.add_content_link {
+    display: flex;
+    align-items: center;
+}

@@ -11,7 +11,8 @@
 
 {% block extra_css %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/facility/floor.css' %}">
+  <link rel="preload" href="{% static 'css/facility/floor.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/facility/floor.css' %}"></noscript>
 {% endblock %}
 
 

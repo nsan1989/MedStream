@@ -8,10 +8,20 @@ from import_export.admin import ImportExportModelAdmin
 class PlaylistResource(resources.ModelResource):
     class Meta:
         model = Playlist
-        fields = ("id", "name", "description", "created_by__phone_number", "is_active")
+        fields = (
+            "id",
+            "name",
+            "organization__name",
+            "facility__name",
+            "description",
+            "created_by__phone_number",
+            "is_active",
+        )
         export_order = (
             "id",
             "name",
+            "organization__name",
+            "facility__name",
             "description",
             "created_by__phone_number",
             "is_active",
@@ -22,9 +32,23 @@ class PlaylistResource(resources.ModelResource):
 @admin.register(Playlist)
 class PlaylistAdmin(ImportExportModelAdmin):
     resource_class = PlaylistResource
-    list_display = ("id", "name", "created_by", "is_active", "created_at")
-    list_filter = ("is_active", "created_at")
-    search_fields = ("name", "description", "created_by__phone_number")
+    list_display = (
+        "id",
+        "name",
+        "organization",
+        "facility",
+        "created_by",
+        "is_active",
+        "created_at",
+    )
+    list_filter = ("organization", "facility", "is_active", "created_at")
+    search_fields = (
+        "name",
+        "description",
+        "organization__name",
+        "facility__name",
+        "created_by__phone_number",
+    )
 
 
 # Playlist item resources.

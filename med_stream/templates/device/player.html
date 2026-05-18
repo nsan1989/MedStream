@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Player - {{ device.name }}</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .player-shell {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #111;
+            border-bottom: 1px solid #222;
+            font-size: 0.9rem;
+        }
+        .status {
+            color: #9ad39a;
+        }
+        .stage {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            overflow: hidden;
+        }
+        .stage img,
+        .stage video,
+        .stage audio,
+        .stage iframe {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .stage .placeholder {
+            color: #888;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-shell">
+        <div class="player-header">
+            <div>
+                Device: <strong>{{ device.name }}</strong>
+            </div>
+            <div id="player-status" class="status">Waiting for command...</div>
+        </div>
+        <div id="player-stage" class="stage">
+            <div class="placeholder">No media command received yet.</div>
+        </div>
+    </div>
+
+    <script>
+        const deviceId = "{{ device.id }}";
+        let lastCommandId = null;
+        let playlistTimer = null;
+
+        const statusNode = document.getElementById("player-status");
+        const stageNode = document.getElementById("player-stage");
+
+        function setStatus(text, isError = false) {
+            statusNode.textContent = text;
+            statusNode.style.color = isError ? "#ff9999" : "#9ad39a";
+        }
+
+        function absoluteUrl(rawUrl) {
+            if (!rawUrl) return "";
+            try {
+                return new URL(rawUrl, window.location.origin).toString();
+            } catch (e) {
+                return rawUrl;
+            }
+        }
+
+        function clearStage() {
+            if (playlistTimer) {
+                clearInterval(playlistTimer);
+                playlistTimer = null;
+            }
+            stageNode.innerHTML = "";
+        }
+
+        async function sendAck(commandId, status, message) {
+            try {
+                await fetch(`/device/player/${deviceId}/ack/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        command_id: commandId,
+                        status: status,
+                        message: message
+                    })
+                });
+            } catch (error) {
+                console.error("Ack failed:", error);
+            }
+        }
+
+        function renderMedia(mediaType, fileUrl) {
+            clearStage();
+
+            const absUrl = absoluteUrl(fileUrl);
+            if (!absUrl) {
+                stageNode.innerHTML = '<div class="placeholder">Missing media URL.</div>';
+                return;
+            }
+
+            const type = (mediaType || "").toUpperCase();
+
+            if (type === "IMAGE") {
+                const img = document.createElement("img");
+                img.src = absUrl;
+                img.alt = "Media Asset";
+                stageNode.appendChild(img);
+                return;
+            }
+
+            if (type === "VIDEO") {
+                const video = document.createElement("video");
+                video.src = absUrl;
+                video.autoplay = true;
+                video.muted = true;
+                video.loop = true;
+                video.controls = true;
+                stageNode.appendChild(video);
+                return;
+            }
+
+            if (type === "AUDIO") {
+                const audio = document.createElement("audio");
+                audio.src = absUrl;
+                audio.autoplay = true;
+                audio.controls = true;
+                stageNode.appendChild(audio);
+                return;
+            }
+
+            if (type === "PDF" || type === "HTML") {
+                const iframe = document.createElement("iframe");
+                iframe.src = absUrl;
+                iframe.width = "100%";
+                iframe.height = "100%";
+                iframe.style.border = "none";
+                stageNode.appendChild(iframe);
+                return;
+            }
+
+            stageNode.innerHTML = '<div class="placeholder">Unsupported media type.</div>';
+        }
+
+        function renderPlaylist(items) {
+            clearStage();
+
+            if (!items || !items.length) {
+                stageNode.innerHTML = '<div class="placeholder">Playlist has no items.</div>';
+                return;
+            }
+
+            let index = 0;
+
+            function showCurrentItem() {
+                const item = items[index];
+                renderMedia(item.media_type, item.file_url);
+                setStatus(`Playing playlist item ${index + 1} of ${items.length}`);
+                const durationSeconds = Number(item.duration || 10);
+                const waitMs = Math.max(1, durationSeconds) * 1000;
+
+                if (playlistTimer) {
+                    clearInterval(playlistTimer);
+                }
+                playlistTimer = setInterval(() => {
+                    index = (index + 1) % items.length;
+                    showCurrentItem();
+                }, waitMs);
+            }
+
+            showCurrentItem();
+        }
+
+        async function pollCommand() {
+            try {
+                const response = await fetch(`/device/player/${deviceId}/next-command/`);
+                const data = await response.json();
+
+                if (!data.command_id || !data.payload || !data.payload.command) {
+                    return;
+                }
+
+                if (data.command_id === lastCommandId) {
+                    return;
+                }
+
+                lastCommandId = data.command_id;
+                const payload = data.payload;
+
+                if (payload.command !== "PLAY") {
+                    return;
+                }
+
+                if (payload.source_type === "MEDIA_ASSET") {
+                    renderMedia(payload.media_type, payload.file_url);
+                    setStatus(`Playing media: ${payload.title || "Untitled"}`);
+                    await sendAck(data.command_id, "PLAYING", "Media playback started");
+                    return;
+                }
+
+                if (payload.source_type === "PLAYLIST") {
+                    renderPlaylist(payload.items || []);
+                    setStatus(`Playing playlist: ${payload.playlist_name || "Untitled"}`);
+                    await sendAck(data.command_id, "PLAYING", "Playlist playback started");
+                    return;
+                }
+
+                setStatus("Unknown source type", true);
+            } catch (error) {
+                console.error(error);
+                setStatus("Polling error", true);
+            }
+        }
+
+        pollCommand();
+        setInterval(pollCommand, 5000);
+    </script>
+</body>
+</html>
