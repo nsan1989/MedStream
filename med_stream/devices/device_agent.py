@@ -63,16 +63,17 @@ class DeviceAgent:
 
         self.last_command_id = command_id
         source_type = payload.get("source_type")
+        loop = bool(payload.get("loop", False))
 
         if source_type == "MEDIA_ASSET":
-            ok = self.play_media_asset(payload)
+            ok = self.play_media_asset(payload, loop=loop)
             self.send_ack(
                 command_id,
                 "PLAYED" if ok else "FAILED",
                 "Media playback executed." if ok else "Media playback failed.",
             )
         elif source_type == "PLAYLIST":
-            ok = self.play_playlist(payload)
+            ok = self.play_playlist(payload, loop=loop)
             self.send_ack(
                 command_id,
                 "PLAYED" if ok else "FAILED",
@@ -81,7 +82,7 @@ class DeviceAgent:
         else:
             self.send_ack(command_id, "FAILED", "Unknown source type.")
 
-    def play_media_asset(self, payload: Dict[str, Any]) -> bool:
+    def play_media_asset(self, payload: Dict[str, Any], loop: bool = False) -> bool:
         file_url = payload.get("file_url")
         media_type = (payload.get("media_type") or "").upper()
         title = payload.get("title", "Untitled")
@@ -93,9 +94,9 @@ class DeviceAgent:
         media_url = to_absolute_url(self.base_url, file_url)
         print(f"[PLAY] {title} ({media_type}) -> {media_url}")
 
-        return self.play_with_ffplay(media_url, media_type, duration=10)
+        return self.play_with_ffplay(media_url, media_type, duration=10, loop=loop)
 
-    def play_playlist(self, payload: Dict[str, Any]) -> bool:
+    def play_playlist(self, payload: Dict[str, Any], loop: bool = False) -> bool:
         items = payload.get("items") or []
         if not items:
             print("[PLAY ERROR] Playlist has no items.")
@@ -104,19 +105,27 @@ class DeviceAgent:
         print(
             f"[PLAYLIST] {payload.get('playlist_name', 'Untitled')} ({len(items)} items)"
         )
-        for item in items:
-            media_url = to_absolute_url(self.base_url, item.get("file_url", ""))
-            media_type = (item.get("media_type") or "").upper()
-            duration = int(item.get("duration") or 10)
-            title = item.get("title", "Untitled")
 
-            print(f"  -> {title} ({media_type}) for {duration}s")
-            ok = self.play_with_ffplay(media_url, media_type, duration=duration)
-            if not ok:
-                return False
+        while True:
+            for item in items:
+                media_url = to_absolute_url(self.base_url, item.get("file_url", ""))
+                media_type = (item.get("media_type") or "").upper()
+                duration = int(item.get("duration") or 10)
+                title = item.get("title", "Untitled")
+
+                print(f"  -> {title} ({media_type}) for {duration}s")
+                ok = self.play_with_ffplay(
+                    media_url, media_type, duration=duration, loop=loop
+                )
+                if not ok:
+                    return False
+            if not loop:
+                break
         return True
 
-    def play_with_ffplay(self, media_url: str, media_type: str, duration: int) -> bool:
+    def play_with_ffplay(
+        self, media_url: str, media_type: str, duration: int, loop: bool = False
+    ) -> bool:
         if not self.ffplay:
             print(
                 "[PLAY ERROR] ffplay not found. Install FFmpeg and ensure ffplay is on PATH."
@@ -126,10 +135,19 @@ class DeviceAgent:
         cmd = [self.ffplay, "-loglevel", "error", "-nostats", "-fs"]
 
         if media_type == "IMAGE":
-            cmd.extend(["-loop", "0", "-t", str(max(1, duration))])
+            cmd.extend(["-loop", "0"])
+            if not loop:
+                cmd.extend(["-t", str(max(1, duration))])
         elif media_type == "VIDEO":
-            # Videos should auto close when done
-            cmd.append("-autoexit")
+            if loop:
+                cmd.extend(["-loop", "0"])
+            else:
+                cmd.append("-autoexit")
+        elif media_type == "AUDIO":
+            if loop:
+                cmd.extend(["-loop", "0"])
+            else:
+                cmd.append("-autoexit")
 
         cmd.append(media_url)
 

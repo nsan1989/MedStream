@@ -8,7 +8,12 @@ from .forms import (
     OPDScheduleForm,
     DoctorScheduleForm,
 )
-from .models import Department, OPDRoom, OPDSchedule, DoctorSchedule as DoctorScheduleModel
+from .models import (
+    Department,
+    OPDRoom,
+    OPDSchedule,
+    DoctorSchedule as DoctorScheduleModel,
+)
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 
@@ -120,8 +125,8 @@ def OpdRoom(request):
             messages.success(request, "OPD room added successfully.")
 
             if user.role == "ADMIN":
-                return redirect("admin_dashboard")
-            return redirect("staff_dashboard")
+                return redirect("schedules")
+            return redirect("schedules")
     else:
         form = OPDRoomForm(user=user)
 
@@ -148,8 +153,8 @@ def OpdSchedule(request):
             messages.success(request, "OPD schedule added successfully.")
 
             if user.role == "ADMIN":
-                return redirect("admin_dashboard")
-            return redirect("staff_dashboard")
+                return redirect("schedules")
+            return redirect("schedules")
     else:
         form = OPDScheduleForm(user=user)
 
@@ -176,8 +181,8 @@ def DoctorSchedule(request):
             messages.success(request, "Doctor schedule added successfully.")
 
             if user.role == "ADMIN":
-                return redirect("admin_dashboard")
-            return redirect("staff_dashboard")
+                return redirect("schedules")
+            return redirect("schedules")
     else:
         form = DoctorScheduleForm(user=user)
 

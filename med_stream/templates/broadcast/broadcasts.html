@@ -37,8 +37,8 @@
               <th scope="col">Organization</th>
               <th scope="col">Facility</th>
               <th scope="col">Device</th>
-              <th scope="col">Doctor</th>
-              <th scope="col">OPD Room</th>
+              <th scope="col">Doctor Schedule</th>
+              <th scope="col">OPD Schedule</th>
               <th scope="col">Layout</th>
               <th scope="col">Started</th>
               <th scope="col">Ended</th>
@@ -52,8 +52,24 @@
                   <td>{{ item.organization.name|default:"-" }}</td>
                   <td>{{ item.facility.name|default:"-" }}</td>
                   <td>{{ item.device.name|default:"-" }}</td>
-                  <td>{{ item.doctor_schedule.doctor.name|default:"-" }}</td>
-                  <td>{{ item.opdschedule.opd_room.name|default:"-" }}</td>
+                  <td>
+                    {% if item.doctor_schedule %}
+                      {{ item.doctor_schedule.doctor.name|default:"-" }}<br>
+                      {{ item.doctor_schedule.get_day_of_week_display }}<br>
+                      {{ item.doctor_schedule.start_time }} - {{ item.doctor_schedule.end_time }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.opdschedule %}
+                      {{ item.opdschedule.opd_room.name|default:"-" }}<br>
+                      {{ item.opdschedule.get_day_of_week_display }}<br>
+                      {{ item.opdschedule.start_time }} - {{ item.opdschedule.end_time }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
                   <td>{{ item.layout.name|default:"-" }}</td>
                   <td>{{ item.started_at }}</td>
                   <td>{{ item.ended_at|default:"-" }}</td>

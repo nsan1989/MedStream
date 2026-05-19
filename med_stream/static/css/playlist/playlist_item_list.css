@@ -1,3 +1,4 @@
+
 .breadcrumb {
     margin-bottom: 0;
     background-color: var(--tertiary-color);
@@ -13,7 +14,18 @@
     align-items: center;
 }
 
-.form-heading h3 {
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.content-title h3 {
     text-transform: uppercase;
     font-weight: bold;
+}
+
+.add_content_link {
+    display: flex;
+    align-items: center;
 }

@@ -1,4 +1,4 @@
-
+@import url("../common/style.css");
 
 .container-fluid {
     height: 100vh;
@@ -31,5 +31,22 @@
         min-height: 100vh;
     }
 
-    
+    .login-content,
+    .register-content {
+        display: flex;
+        flex-direction: column;;
+        align-items: center;
+        padding: 2rem;
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+    }
+
+    .register-info,
+    .login-info {
+        color: var(--secondary-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
 }

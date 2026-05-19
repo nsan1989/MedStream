@@ -3,7 +3,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from core.models import TimeStampedModel
 from organizations.models import Organization
-from facilities.models import Facility
+from facilities.models import Facility, Block, Floor
 
 
 # Department model.
@@ -87,6 +87,20 @@ class OPDRoom(TimeStampedModel):
         blank=True,
         related_name="opd_rooms",
     )
+    block = models.ForeignKey(
+        Block,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="opd_rooms",
+    )
+    floor = models.ForeignKey(
+        Floor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="opd_rooms",
+    )
     is_active = models.BooleanField(default=True)
 
     def clean(self):
@@ -96,6 +110,24 @@ class OPDRoom(TimeStampedModel):
             if self.facility.organization_id != self.organization_id:
                 raise ValidationError(
                     {"facility": "Facility must belong to the selected organization."}
+                )
+
+        if self.block and self.facility:
+            if self.block.facility_id != self.facility_id:
+                raise ValidationError(
+                    {"block": "Block must belong to the selected facility."}
+                )
+
+        if self.floor and self.block:
+            if self.floor.block_id != self.block_id:
+                raise ValidationError(
+                    {"floor": "Floor must belong to the selected block."}
+                )
+
+        if self.floor and self.facility and self.floor.block:
+            if self.floor.block.facility_id != self.facility_id:
+                raise ValidationError(
+                    {"floor": "Floor must belong to the selected facility."}
                 )
 
         room_qs = OPDRoom.objects.filter(
@@ -111,6 +143,15 @@ class OPDRoom(TimeStampedModel):
             )
 
     def __str__(self):
+        details = []
+        if self.block:
+            details.append(str(self.block))
+        if self.floor:
+            details.append(str(self.floor))
+
+        if details:
+            return f"{self.name} ({' / '.join(details)})"
+
         return self.name
 
 
@@ -122,6 +163,7 @@ class OPDSchedule(TimeStampedModel):
     opd_room = models.ForeignKey(
         OPDRoom, on_delete=models.CASCADE, related_name="opd_schedules"
     )
+
     day_of_week = models.IntegerField(
         choices=[
             (0, "Monday"),
@@ -133,6 +175,7 @@ class OPDSchedule(TimeStampedModel):
             (6, "Sunday"),
         ]
     )
+
     start_time = models.TimeField()
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
@@ -140,40 +183,66 @@ class OPDSchedule(TimeStampedModel):
     def clean(self):
         super().clean()
 
-        if self.start_time >= self.end_time:
-            raise ValidationError({"end_time": "End time must be after start time."})
+        # Prevent None comparison
+        if self.start_time and self.end_time:
+            if self.start_time >= self.end_time:
+                raise ValidationError(
+                    {"end_time": "End time must be after start time."}
+                )
 
-        doctor_org_id = self.doctor.organization_id
-        room_org_id = self.opd_room.organization_id
-        if doctor_org_id and room_org_id and doctor_org_id != room_org_id:
-            raise ValidationError(
-                {
-                    "opd_room": (
-                        "Doctor and OPD room must belong to the same organization."
-                    )
-                }
-            )
+        # Prevent doctor/opd_room None error
+        if self.doctor and self.opd_room:
+            doctor_org_id = self.doctor.organization_id
+            room_org_id = self.opd_room.organization_id
 
-        schedule_qs = OPDSchedule.objects.filter(
-            doctor=self.doctor,
-            opd_room=self.opd_room,
-            day_of_week=self.day_of_week,
-        )
-        if self.pk:
-            schedule_qs = schedule_qs.exclude(pk=self.pk)
-        for schedule in schedule_qs:
-            if (
-                self.start_time < schedule.end_time
-                and self.end_time > schedule.start_time
-            ):
+            if doctor_org_id and room_org_id and doctor_org_id != room_org_id:
                 raise ValidationError(
                     {
-                        "start_time": "This schedule overlaps with an existing schedule for the doctor and OPD room."
+                        "opd_room": (
+                            "Doctor and OPD room must belong "
+                            "to the same organization."
+                        )
                     }
                 )
 
+        # Run overlap validation only if required fields exist
+        if all(
+            [
+                self.doctor,
+                self.opd_room,
+                self.day_of_week is not None,
+                self.start_time,
+                self.end_time,
+            ]
+        ):
+            schedule_qs = OPDSchedule.objects.filter(
+                doctor=self.doctor,
+                opd_room=self.opd_room,
+                day_of_week=self.day_of_week,
+            )
+
+            if self.pk:
+                schedule_qs = schedule_qs.exclude(pk=self.pk)
+
+            for schedule in schedule_qs:
+                if (
+                    self.start_time < schedule.end_time
+                    and self.end_time > schedule.start_time
+                ):
+                    raise ValidationError(
+                        {
+                            "start_time": (
+                                "This schedule overlaps with an " "existing schedule."
+                            )
+                        }
+                    )
+
     def __str__(self):
-        return f"{self.doctor} - {self.opd_room} on {self.get_day_of_week_display()} from {self.start_time} to {self.end_time}"
+        return (
+            f"{self.doctor} - {self.opd_room} "
+            f"on {self.get_day_of_week_display()} "
+            f"from {self.start_time} to {self.end_time}"
+        )
 
 
 # Doctor schedule model.

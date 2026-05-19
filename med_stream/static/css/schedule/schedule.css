@@ -13,7 +13,8 @@
     align-items: center;
 }
 
-.form-heading h3 {
-    text-transform: uppercase;
-    font-weight: bold;
+.add-schedule-links {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
 }

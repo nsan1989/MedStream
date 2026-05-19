@@ -1,0 +1,71 @@
+{% extends "core/index.html" %}
+{% load crispy_forms_tags %}
+{% load bootstrap_icons %}
+{% load static %}
+
+
+{% block title %}
+    Playlist
+{% endblock %}
+
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="preload" href="{% static 'css/playlist/playlist_item_list.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/playlist/playlist_item_list.css' %}"></noscript>
+{% endblock %}
+
+
+{% block app_content %}
+    <div class="container-fluid w-100">
+        <div class="breadcrumb-content mb-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+          <!-- Current Page -->
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <small>Playlist Items</small>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+        <div class="playlist-content-wrapper">
+            <div class="header-content mb-3">
+                <div class="content-title">
+                    <h3>Playlist Items</h3>
+                </div>
+                <div class="add_content_link">
+                    <p class="mb-0">To add a playlist item</p>&nbsp;<a class="btn btn-primary" href="{% url 'add_playlist_item' playlist.id %}">{% bs_icon 'plus' size='1em' %}&nbsp;Add Playlist Item</a>
+                </div>
+            </div>
+            <div class="playlist-item-content table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-danger">
+                        <tr>
+                            <th scope="col">Playlist</th>
+                            <th scope="col">Media</th>
+                            <th scope="col">Order</th>
+                            <th scope="col">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-info">
+                        {% if playlist_items %}
+                            {% for p in playlist_items %}
+                                <tr>
+                                    <td>{{p.playlist.name}}</td>
+                                    <td>{{p.media_asset.title}}</td>
+                                    <td>{{p.order}}</td>
+                                    <td>{{p.duration}}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="100%">No playlist items found!</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

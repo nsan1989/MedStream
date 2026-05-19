@@ -40,30 +40,32 @@
       </div>
       <div class="playlist-content table-responsive">
         <table class="table table-bordered">
-            <thead class="table-danger">
+          <thead class="table-danger">
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Description</th>
+              <th scope="col">Created By</th>
+              <th scope="col">Is Active</th>
+              <th scope="col">View</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if playlists %}
+              {% for p in playlists %}
                 <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Created By</th>
-                    <th scope="col">Is Active</th>
+                  <td>{{p.name}}</td>
+                  <td>{{p.description}}</td>
+                  <td>{{p.created_by}}</td>
+                  <td>{{p.is_active}}</td>
+                  <td><a href="{% url 'playlist_items' p.id %}">Link</a></td>
                 </tr>
-            </thead>
-            <tbody>
-                {% if playlists %}
-                    {% for p in playlists %}
-                        <tr>
-                            <td>{{p.name}}</td>
-                            <td>{{p.description}}</td>
-                            <td>{{p.created_by}}</td>
-                            <td>{{p.is_active}}</td>
-                        </tr>
-                    {% endfor %}
-                {% else %}
-                <tr>
-                    <td colspan="100%">No playlist!</td>
-                </tr>
-                {% endif %}
-            </tbody>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="100%">No playlist!</td>
+              </tr>
+            {% endif %}
+          </tbody>
         </table>
       </div>
     </div>

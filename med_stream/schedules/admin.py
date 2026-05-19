@@ -62,6 +62,8 @@ class OPDRoomResource(resources.ModelResource):
             "name",
             "organization",
             "facility",
+            "block",
+            "floor",
             "is_active",
             "created_at",
             "updated_at",
@@ -71,11 +73,32 @@ class OPDRoomResource(resources.ModelResource):
 @admin.register(OPDRoom)
 class OPDRoomAdmin(ImportExportModelAdmin):
     resource_class = OPDRoomResource
-    list_display = ("name", "organization", "facility", "is_active", "created_at")
-    list_filter = ("organization", "facility", "is_active", "created_at")
-    search_fields = ("name", "organization__name", "facility__name")
+    list_display = (
+        "name",
+        "organization",
+        "facility",
+        "block",
+        "floor",
+        "is_active",
+        "created_at",
+    )
+    list_filter = (
+        "organization",
+        "facility",
+        "block",
+        "floor",
+        "is_active",
+        "created_at",
+    )
+    search_fields = (
+        "name",
+        "organization__name",
+        "facility__name",
+        "block__name",
+        "floor__name",
+    )
     ordering = ("name",)
-    list_select_related = ("organization", "facility")
+    list_select_related = ("organization", "facility", "block", "floor")
 
 
 class OPDScheduleResource(resources.ModelResource):

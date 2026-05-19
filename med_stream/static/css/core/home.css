@@ -1,0 +1,24 @@
+@import url("../../css/common/style.css");
+
+
+.home-wrapper {
+    display: flex;
+    flex-direction: column;;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
+}
+
+
+.login-link {
+    text-decoration: none;
+    color: var(--tertiary-color);
+    cursor: pointer;
+}
+
+.login-link:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+}

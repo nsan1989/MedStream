@@ -44,3 +44,65 @@
     </div>
   </div>
 {% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const facilitySelect = document.getElementById("id_facility");
+      const blockSelect = document.getElementById("id_block");
+      const floorSelect = document.getElementById("id_floor");
+
+      function resetSelect(select, defaultLabel) {
+        select.innerHTML = "";
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = defaultLabel;
+        select.appendChild(defaultOption);
+      }
+
+      function populateSelect(select, items) {
+        items.forEach(function (item) {
+          const option = document.createElement("option");
+          option.value = item.id;
+          option.textContent = item.name;
+          select.appendChild(option);
+        });
+      }
+
+      function loadBlocks(facilityId) {
+        resetSelect(blockSelect, "Select Block");
+        resetSelect(floorSelect, "Select Floor");
+        if (!facilityId) {
+          return;
+        }
+        fetch(`{% url 'load_blocks' %}?facility_id=${facilityId}`)
+          .then(response => response.json())
+          .then(data => populateSelect(blockSelect, data))
+          .catch(error => console.error(error));
+      }
+
+      function loadFloors(blockId) {
+        resetSelect(floorSelect, "Select Floor");
+        if (!blockId) {
+          return;
+        }
+        fetch(`{% url 'load_floors' %}?block_id=${blockId}`)
+          .then(response => response.json())
+          .then(data => populateSelect(floorSelect, data))
+          .catch(error => console.error(error));
+      }
+
+      if (facilitySelect) {
+        facilitySelect.addEventListener("change", function () {
+          loadBlocks(this.value);
+        });
+      }
+
+      if (blockSelect) {
+        blockSelect.addEventListener("change", function () {
+          loadFloors(this.value);
+        });
+      }
+    });
+  </script>
+{% endblock %}

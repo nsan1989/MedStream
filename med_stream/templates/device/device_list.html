@@ -61,7 +61,7 @@
                   <td>{{device.floor}}</td>
                   <td>{{device.device_type}}</td>
                   <td>{{device.ip_address}}</td>
-                  <td>{{device.health.get_status_display}}</td>
+                  <td>{{device.health.status|default:"-"}}</td>
                 </tr>
               {% endfor %}
             {% else %}

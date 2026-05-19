@@ -1,13 +1,37 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from .models import BroadcastSession
 from .forms import DevicePlaybackForm
 from devices.models import DeviceLog
 from devices.enums import LogType
+from layouts.models import Layout
 from playlists.models import PlaylistItem
 from django.utils import timezone
+
+
+def _get_broadcast_layout(device, organization):
+    layout_qs = Layout.objects.filter(is_active=True)
+
+    if organization:
+        layout_qs = layout_qs.filter(organization=organization)
+
+    layout = layout_qs.filter(layout_type=device.orientation).order_by("name").first()
+    if layout:
+        return layout
+
+    layout = layout_qs.order_by("name").first()
+    if layout:
+        return layout
+
+    # Fall back to an active global layout if no organization-specific layout exists.
+    layout = (
+        Layout.objects.filter(organization__isnull=True, is_active=True)
+        .order_by("name")
+        .first()
+    )
+    return layout
 
 
 # Broadcast view.
@@ -30,6 +54,8 @@ def BroadcastView(request):
             device = playback_form.cleaned_data["device"]
             media_asset = playback_form.cleaned_data["media_asset"]
             playlist = playback_form.cleaned_data["playlist"]
+            doctor_schedule = playback_form.cleaned_data.get("doctor_schedule")
+            opdschedule = playback_form.cleaned_data.get("opdschedule")
 
             if user.role == "STAFF" and device.facility_id != user.facility_id:
                 raise PermissionDenied
@@ -56,7 +82,7 @@ def BroadcastView(request):
                         ),
                     }
                 )
-            else:
+            elif playlist:
                 items = list(
                     PlaylistItem.objects.filter(playlist=playlist)
                     .select_related("media_asset")
@@ -84,6 +110,109 @@ def BroadcastView(request):
                         ],
                     }
                 )
+            else:
+                layout = _get_broadcast_layout(device, user.organization)
+                if not layout:
+                    playback_form.add_error(
+                        None,
+                        "Unable to save broadcast "
+                        "session because no active "
+                        "layout was found for this "
+                        "organization.",
+                    )
+                elif doctor_schedule:
+                    payload.update(
+                        {
+                            "source_type": "SCHEDULE",
+                            "doctor_schedule_id": str(doctor_schedule.id),
+                            "doctor_name": doctor_schedule.doctor.name,
+                            "doctor_schedule_day": doctor_schedule.get_day_of_week_display(),
+                            "doctor_schedule_start": doctor_schedule.start_time.isoformat(),
+                            "doctor_schedule_end": doctor_schedule.end_time.isoformat(),
+                        }
+                    )
+                    try:
+                        BroadcastSession.objects.create(
+                            device=device,
+                            doctor_schedule=doctor_schedule,
+                            layout=layout,
+                            started_at=timezone.now(),
+                            organization=user.organization,
+                            facility=device.facility,
+                        )
+                    except ValidationError as exc:
+                        playback_form.add_error(
+                            None,
+                            exc.messages if exc.messages else str(exc),
+                        )
+                elif opdschedule:
+                    payload.update(
+                        {
+                            "source_type": "OPD_SCHEDULE",
+                            "opdschedule_id": str(opdschedule.id),
+                            "opd_room_name": opdschedule.opd_room.name,
+                            "opd_schedule_day": opdschedule.get_day_of_week_display(),
+                            "opd_schedule_start": opdschedule.start_time.isoformat(),
+                            "opd_schedule_end": opdschedule.end_time.isoformat(),
+                        }
+                    )
+                    try:
+                        BroadcastSession.objects.create(
+                            device=device,
+                            opdschedule=opdschedule,
+                            layout=layout,
+                            started_at=timezone.now(),
+                            organization=user.organization,
+                            facility=device.facility,
+                        )
+                    except ValidationError as exc:
+                        playback_form.add_error(
+                            None,
+                            exc.messages if exc.messages else str(exc),
+                        )
+
+            if playback_form.errors:
+                # Render the page again so errors can be displayed without issuing a command.
+                if user.role == "ADMIN":
+                    broadcasts = (
+                        BroadcastSession.objects.filter(
+                            organization=user.organization,
+                        )
+                        .select_related(
+                            "organization",
+                            "facility",
+                            "device",
+                            "doctor_schedule",
+                            "doctor_schedule__doctor",
+                            "opdschedule",
+                            "opdschedule__opd_room",
+                            "layout",
+                        )
+                        .order_by("-started_at")
+                    )
+                elif user.role == "STAFF":
+                    broadcasts = (
+                        BroadcastSession.objects.filter(
+                            organization=user.organization,
+                            facility=user.facility,
+                        )
+                        .select_related(
+                            "organization",
+                            "facility",
+                            "device",
+                            "doctor_schedule",
+                            "doctor_schedule__doctor",
+                            "opdschedule",
+                            "opdschedule__opd_room",
+                            "layout",
+                        )
+                        .order_by("-started_at")
+                    )
+                context = {
+                    "broadcasts": broadcasts,
+                    "playback_form": playback_form,
+                }
+                return render(request, "broadcast/broadcasts.html", context)
 
             DeviceLog.objects.create(
                 device=device,

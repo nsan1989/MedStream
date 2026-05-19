@@ -4,7 +4,7 @@ from .forms import DeviceForm
 from django.core.exceptions import PermissionDenied
 from accounts.enums import UserRole
 from facilities.models import Block, Floor
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -192,6 +192,29 @@ def DeviceCommandAck(request, device_id):
     )
 
     return JsonResponse({"ok": True})
+
+
+def get_remote_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+# Device-side auto-launch player page.
+@require_GET
+def DevicePlayerAutoPage(request):
+    remote_ip = get_remote_ip(request)
+    if not remote_ip:
+        return HttpResponse("Unable to determine device IP.", status=400)
+
+    device = Device.objects.filter(ip_address=remote_ip, is_active=True).first()
+    if not device:
+        return HttpResponse(
+            "No active device registered for this IP address.", status=404
+        )
+
+    return redirect("device_player_page", device_id=device.id)
 
 
 # Device-side player page.

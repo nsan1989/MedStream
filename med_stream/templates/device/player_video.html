@@ -1,0 +1,15 @@
+function renderVideo(fileUrl, isKiosk, loop) {
+const video = document.createElement("video");
+video.src = fileUrl;
+video.autoplay = true;
+video.muted = !isKiosk;
+video.loop = Boolean(loop);
+video.controls = isKiosk;
+video.style.maxWidth = "100%";
+video.style.maxHeight = "100%";
+if (deviceType === "LED_WALL") {
+video.playsInline = true;
+video.style.objectFit = "cover";
+}
+stageNode.appendChild(video);
+}

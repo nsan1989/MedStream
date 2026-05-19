@@ -1,8 +1,15 @@
 {% extends "core/index.html" %}
 {% load bootstrap_icons %}
+{% load static %}
 
 {% block title %}
   Schedules
+{% endblock %}
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="preload" href="{% static 'css/schedule/schedule.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/schedule/schedule.css' %}"></noscript>
 {% endblock %}
 
 {% block app_content %}
@@ -16,6 +23,22 @@
       </nav>
     </div>
 
+    <div class="add-schedule-links mb-3">
+      <!--OPD room-->
+      <div class="opd-room-link">
+        <a class="btn btn-primary" href="{% url 'add_opd_room' %}">{% bs_icon 'plus' size='1em' color='#ffffff' %}&nbsp;Add OPD Room</a>
+      </div>
+      <!--OPD schedule add link-->
+      <div class="opd-link">
+        <a class="btn btn-primary" href="{% url 'add_opd_schedule' %}">{% bs_icon 'plus' size='1em' color='#ffffff' %}&nbsp;Add OPD Schedule</a>
+      </div>
+      <!--Doctor schedule link-->
+      <div class="doctor-link">
+        <a class="btn btn-primary" href="{% url 'add_doctor_schedule' %}">{% bs_icon 'plus' size='1em' color='#ffffff' %}&nbsp;Add Doctor Schedule</a>
+      </div>
+    </div>
+
+    <!--
     <div class="mb-4">
       <h3 class="text-uppercase">OPD Rooms</h3>
       <div class="table-responsive">
@@ -45,9 +68,10 @@
         </table>
       </div>
     </div>
+    -->
 
     <div class="mb-4">
-      <h3 class="text-uppercase">OPD Schedules</h3>
+      <h3 class="text-uppercase fw-bold">OPD Schedules</h3>
       <div class="table-responsive">
         <table class="table table-bordered">
           <thead class="table-danger">
@@ -83,7 +107,7 @@
     </div>
 
     <div>
-      <h3 class="text-uppercase">Doctor Schedules</h3>
+      <h3 class="text-uppercase fw-bold">Doctor Schedules</h3>
       <div class="table-responsive">
         <table class="table table-bordered">
           <thead class="table-danger">
