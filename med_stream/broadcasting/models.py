@@ -31,13 +31,25 @@ class BroadcastSession(TimeStampedModel):
         Device, on_delete=models.CASCADE, related_name="broadcast_device"
     )
     doctor_schedule = models.ForeignKey(
-        DoctorSchedule, on_delete=models.CASCADE, related_name="broadcast_doctor"
+        DoctorSchedule,
+        on_delete=models.CASCADE,
+        related_name="broadcast_doctor",
+        null=True,
+        blank=True,
     )
     opdschedule = models.ForeignKey(
-        OPDSchedule, on_delete=models.CASCADE, related_name="broadcast_opd"
+        OPDSchedule,
+        on_delete=models.CASCADE,
+        related_name="broadcast_opd",
+        null=True,
+        blank=True,
     )
     layout = models.ForeignKey(
-        Layout, on_delete=models.CASCADE, related_name="broadcast_layout"
+        Layout,
+        on_delete=models.SET_NULL,
+        related_name="broadcast_layout",
+        null=True,
+        blank=True,
     )
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField(null=True, blank=True)
@@ -50,141 +62,111 @@ class BroadcastSession(TimeStampedModel):
     def clean(self):
         super().clean()
 
-        if not self.doctor_schedule_id or not self.opdschedule_id:
+        # Skip schedule validation for
+        # media / playlist broadcasts
+        if not self.doctor_schedule_id and not self.opdschedule_id:
             return
 
-        if self.doctor_schedule.doctor_id != self.opdschedule.doctor_id:
+        # Validate doctor/opd relationship only
+        # if both are selected
+        if self.doctor_schedule_id and self.opdschedule_id:
+            if self.doctor_schedule.doctor_id != self.opdschedule.doctor_id:
+                raise ValidationError(
+                    {
+                        "opdschedule": (
+                            "Doctor schedule and OPD schedule "
+                            "must belong to the same doctor."
+                        )
+                    }
+                )
+
+        doctor_org_id = None
+        doctor_facility_id = None
+        opd_org_id = None
+        opd_facility_id = None
+
+        if self.doctor_schedule_id:
+            doctor_org_id = self.doctor_schedule.doctor.organization_id
+            doctor_facility_id = self.doctor_schedule.doctor.facility_id
+
+        if self.opdschedule_id:
+            opd_org_id = self.opdschedule.doctor.organization_id
+            opd_facility_id = self.opdschedule.opd_room.facility_id
+
+        layout_org_id = self.layout.organization_id if self.layout_id else None
+
+        broadcast_org_id = self.organization_id
+        device_facility_id = self.device.facility_id
+        broadcast_facility_id = self.facility_id
+
+        # Organization validation
+        known_orgs = {
+            org_id
+            for org_id in [
+                doctor_org_id,
+                opd_org_id,
+            ]
+            if org_id
+        }
+
+        if len(known_orgs) > 1:
             raise ValidationError(
                 {
-                    "opdschedule": (
-                        "Doctor schedule and OPD schedule must belong to the same doctor."
+                    "organization": (
+                        "Organization mismatch between "
+                        "doctor schedule and OPD schedule."
                     )
                 }
             )
 
-        doctor_org_id = self.doctor_schedule.doctor.organization_id
-        opd_org_id = self.opdschedule.doctor.organization_id
-        layout_org_id = self.layout.organization_id
-        broadcast_org_id = self.organization_id
-        device_facility_id = self.device.facility_id
-        doctor_facility_id = self.doctor_schedule.doctor.facility_id
-        opd_facility_id = self.opdschedule.opd_room.facility_id
-        broadcast_facility_id = self.facility_id
+        primary_org_id = next(iter(known_orgs)) if known_orgs else None
 
-        if doctor_org_id and opd_org_id and doctor_org_id != opd_org_id:
+        if broadcast_org_id and primary_org_id and broadcast_org_id != primary_org_id:
             raise ValidationError(
                 {
-                    "doctor_schedule": "Doctor schedule and OPD schedule organization mismatch."
+                    "organization": (
+                        "Broadcast organization must " "match selected schedule."
+                    )
                 }
             )
 
-        if broadcast_org_id:
-            if doctor_org_id and doctor_org_id != broadcast_org_id:
-                raise ValidationError(
-                    {
-                        "organization": "Broadcast organization must match doctor organization."
-                    }
-                )
-            if layout_org_id and layout_org_id != broadcast_org_id:
-                raise ValidationError(
-                    {
-                        "layout": "Layout must belong to the selected broadcast organization."
-                    }
-                )
-        if (
-            self.device.organization_id
-            and doctor_org_id
-            and self.device.organization_id != doctor_org_id
-        ):
+        device_org_id = (
+            self.device.facility.organization_id
+            if self.device_id and self.device.facility_id
+            else None
+        )
+
+        if device_org_id and primary_org_id and device_org_id != primary_org_id:
             raise ValidationError(
-                {"device": "Device organization must match doctor organization."}
+                {"device": ("Device organization must " "match schedule organization.")}
             )
 
-        if (
-            self.layout.organization_id
-            and doctor_org_id
-            and self.layout.organization_id != doctor_org_id
-        ):
+        if layout_org_id and primary_org_id and layout_org_id != primary_org_id:
             raise ValidationError(
-                {"layout": "Layout organization must match doctor organization."}
+                {"layout": ("Layout organization must " "match schedule organization.")}
             )
 
-        if broadcast_facility_id:
-            if doctor_facility_id and doctor_facility_id != broadcast_facility_id:
-                raise ValidationError(
-                    {
-                        "facility": "Broadcast facility must match doctor facility."
-                    }
-                )
-            if device_facility_id and device_facility_id != broadcast_facility_id:
-                raise ValidationError(
-                    {
-                        "device": "Device facility must match selected broadcast facility."
-                    }
-                )
-            if opd_facility_id and opd_facility_id != broadcast_facility_id:
-                raise ValidationError(
-                    {"opdschedule": "OPD room facility must match broadcast facility."}
-                )
-        else:
-            known_facilities = {
-                f_id
-                for f_id in [doctor_facility_id, device_facility_id, opd_facility_id]
-                if f_id
-            }
-            if len(known_facilities) > 1:
-                raise ValidationError(
-                    {
-                        "facility": (
-                            "Facility mismatch across doctor, OPD room, and device. "
-                            "Select a facility explicitly."
-                        )
-                    }
-                )
+        # Facility validation
+        known_facilities = {
+            f_id
+            for f_id in [
+                doctor_facility_id,
+                opd_facility_id,
+                device_facility_id,
+            ]
+            if f_id
+        }
 
-        if self.started_at:
-            started_weekday = self.started_at.weekday()
-            started_time = self.started_at.time()
+        if (
+            broadcast_facility_id
+            and len(known_facilities) > 0
+            and broadcast_facility_id not in known_facilities
+        ):
+            raise ValidationError({"facility": ("Broadcast facility mismatch.")})
 
-            if started_weekday != self.doctor_schedule.day_of_week:
-                raise ValidationError(
-                    {
-                        "started_at": (
-                            "Start datetime day does not match doctor schedule day."
-                        )
-                    }
-                )
-            if started_weekday != self.opdschedule.day_of_week:
-                raise ValidationError(
-                    {
-                        "started_at": "Start datetime day does not match OPD schedule day."
-                    }
-                )
-
-            if not (
-                self.doctor_schedule.start_time
-                <= started_time
-                < self.doctor_schedule.end_time
-            ):
-                raise ValidationError(
-                    {
-                        "started_at": (
-                            "Start time must be within the selected doctor schedule window."
-                        )
-                    }
-                )
-            if not (self.opdschedule.start_time <= started_time < self.opdschedule.end_time):
-                raise ValidationError(
-                    {
-                        "started_at": (
-                            "Start time must be within the selected OPD schedule window."
-                        )
-                    }
-                )
-
-        if self.ended_at and self.ended_at <= self.started_at:
+        if self.ended_at and self.started_at and self.ended_at <= self.started_at:
             raise ValidationError(
-                {"ended_at": "End time must be greater than start time."}
+                {"ended_at": ("End time must be greater " "than start time.")}
             )
 
     def save(self, *args, **kwargs):

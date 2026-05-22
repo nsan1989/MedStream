@@ -266,6 +266,7 @@ class DoctorScheduleForm(forms.ModelForm):
         ],
         widget=forms.CheckboxSelectMultiple,
         label="Day of week",
+        required=False,
     )
 
     class Meta:
@@ -274,11 +275,15 @@ class DoctorScheduleForm(forms.ModelForm):
             "doctor",
             "start_time",
             "end_time",
+            "out_of_station_start_date",
+            "out_of_station_end_date",
             "is_available",
         ]
         widgets = {
             "start_time": forms.TimeInput(attrs={"type": "time"}),
             "end_time": forms.TimeInput(attrs={"type": "time"}),
+            "out_of_station_start_date": forms.DateInput(attrs={"type": "date"}),
+            "out_of_station_end_date": forms.DateInput(attrs={"type": "date"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -322,6 +327,38 @@ class DoctorScheduleForm(forms.ModelForm):
         ):
             self.add_error("doctor", "Selected doctor is outside your facility.")
 
+        out_start = cleaned_data.get("out_of_station_start_date")
+        out_end = cleaned_data.get("out_of_station_end_date")
+        is_available = cleaned_data.get("is_available")
+
+        if out_start or out_end:
+            if not out_start or not out_end:
+                self.add_error(
+                    "out_of_station_start_date",
+                    "Both out of station start and end dates are required.",
+                )
+                self.add_error(
+                    "out_of_station_end_date",
+                    "Both out of station start and end dates are required.",
+                )
+            elif out_start > out_end:
+                self.add_error(
+                    "out_of_station_end_date",
+                    "Out of station end date must be on or after the start date.",
+                )
+
+            if is_available:
+                self.add_error(
+                    "is_available",
+                    "Out of station dates can only be used when the doctor is unavailable.",
+                )
+
+        if not day_values and not (out_start and out_end):
+            self.add_error(
+                "day_of_week",
+                "Select a day of week or provide an out of station date range.",
+            )
+
         if day_values:
             selected_days = [int(day) for day in day_values]
             if self.instance.pk and len(selected_days) > 1:
@@ -352,19 +389,40 @@ class DoctorScheduleForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
+        day_values = self.cleaned_data.get("day_of_week")
+        out_start = self.cleaned_data.get("out_of_station_start_date")
+        out_end = self.cleaned_data.get("out_of_station_end_date")
+
         if self.instance.pk:
-            day_values = self.cleaned_data.get("day_of_week")
             if day_values:
                 self.instance.day_of_week = int(day_values[0])
+            elif out_start and out_end:
+                self.instance.day_of_week = None
             return super().save(commit=commit)
 
         created_schedules = []
-        for day in [int(day) for day in self.cleaned_data.get("day_of_week", [])]:
+        if day_values:
+            for day in [int(day) for day in day_values]:
+                schedule = self.Meta.model(
+                    doctor=self.cleaned_data["doctor"],
+                    day_of_week=day,
+                    start_time=self.cleaned_data["start_time"],
+                    end_time=self.cleaned_data["end_time"],
+                    out_of_station_start_date=out_start,
+                    out_of_station_end_date=out_end,
+                    is_available=self.cleaned_data["is_available"],
+                )
+                if commit:
+                    schedule.save()
+                created_schedules.append(schedule)
+        else:
             schedule = self.Meta.model(
                 doctor=self.cleaned_data["doctor"],
-                day_of_week=day,
+                day_of_week=None,
                 start_time=self.cleaned_data["start_time"],
                 end_time=self.cleaned_data["end_time"],
+                out_of_station_start_date=out_start,
+                out_of_station_end_date=out_end,
                 is_available=self.cleaned_data["is_available"],
             )
             if commit:

@@ -238,8 +238,11 @@ class OPDSchedule(TimeStampedModel):
                     )
 
     def __str__(self):
+        doctor_name = getattr(self.doctor, "name", "Unknown")
+        room_name = getattr(self.opd_room, "name", "Room")
+
         return (
-            f"{self.doctor} - {self.opd_room} "
+            f"{doctor_name} - {room_name} "
             f"on {self.get_day_of_week_display()} "
             f"from {self.start_time} to {self.end_time}"
         )
@@ -259,10 +262,14 @@ class DoctorSchedule(TimeStampedModel):
             (4, "Friday"),
             (5, "Saturday"),
             (6, "Sunday"),
-        ]
+        ],
+        null=True,
+        blank=True,
     )
     start_time = models.TimeField()
     end_time = models.TimeField()
+    out_of_station_start_date = models.DateField(null=True, blank=True)
+    out_of_station_end_date = models.DateField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
 
     def clean(self):
@@ -271,21 +278,62 @@ class DoctorSchedule(TimeStampedModel):
         if self.start_time >= self.end_time:
             raise ValidationError({"end_time": "End time must be after start time."})
 
-        schedule_qs = DoctorSchedule.objects.filter(
-            doctor=self.doctor, day_of_week=self.day_of_week
-        )
-        if self.pk:
-            schedule_qs = schedule_qs.exclude(pk=self.pk)
-        for schedule in schedule_qs:
-            if (
-                self.start_time < schedule.end_time
-                and self.end_time > schedule.start_time
-            ):
+        if bool(self.out_of_station_start_date) ^ bool(self.out_of_station_end_date):
+            raise ValidationError(
+                {
+                    "out_of_station_start_date": (
+                        "Both out of station start and end dates must be set together."
+                    ),
+                    "out_of_station_end_date": (
+                        "Both out of station start and end dates must be set together."
+                    ),
+                }
+            )
+
+        if self.out_of_station_start_date and self.out_of_station_end_date:
+            if self.out_of_station_start_date > self.out_of_station_end_date:
                 raise ValidationError(
                     {
-                        "start_time": "This schedule overlaps with an existing schedule for the doctor."
+                        "out_of_station_end_date": "Out of station end date must be on or after the start date."
+                    }
+                )
+            if self.is_available:
+                raise ValidationError(
+                    {
+                        "is_available": "Out of station schedules must be marked unavailable."
                     }
                 )
 
+        if not self.out_of_station_start_date and not self.out_of_station_end_date:
+            if self.day_of_week is None:
+                raise ValidationError(
+                    {
+                        "day_of_week": "Day of week is required when out of station dates are not set."
+                    }
+                )
+
+        if self.day_of_week is not None:
+            schedule_qs = DoctorSchedule.objects.filter(
+                doctor=self.doctor, day_of_week=self.day_of_week
+            )
+            if self.pk:
+                schedule_qs = schedule_qs.exclude(pk=self.pk)
+            for schedule in schedule_qs:
+                if (
+                    self.start_time < schedule.end_time
+                    and self.end_time > schedule.start_time
+                ):
+                    raise ValidationError(
+                        {
+                            "start_time": "This schedule overlaps with an existing schedule for the doctor."
+                        }
+                    )
+
     def __str__(self):
+        if self.out_of_station_start_date and self.out_of_station_end_date:
+            return (
+                f"{self.doctor} out of station from "
+                f"{self.out_of_station_start_date} to {self.out_of_station_end_date}"
+            )
+
         return f"{self.doctor} on {self.get_day_of_week_display()} from {self.start_time} to {self.end_time}"

@@ -5,6 +5,9 @@ let playlistTimer = null;
 
 const statusNode = document.getElementById("player-status");
 const stageNode = document.getElementById("player-stage");
+const headerDeviceInfo = document.getElementById("player-device-info");
+const headerMarquee = document.getElementById("player-marquee");
+const headerMarqueeText = document.getElementById("player-marquee-text");
 
 const deviceTypeClass = `device-${deviceType.toLowerCase().replace(/_/g, "-")}`;
 document.body.classList.add(deviceTypeClass);
@@ -26,6 +29,18 @@ function applyDeviceSettings() {
     }
 }
 
+function resetHeaderInfo() {
+    headerDeviceInfo.style.display = "block";
+    headerMarquee.style.display = "none";
+    headerMarqueeText.textContent = "";
+}
+
+function showHeaderMarquee(text) {
+    headerDeviceInfo.style.display = "none";
+    headerMarqueeText.textContent = text;
+    headerMarquee.style.display = "block";
+}
+
 applyDeviceSettings();
 
 function absoluteUrl(rawUrl) {
@@ -42,6 +57,7 @@ function clearStage() {
         clearInterval(playlistTimer);
         playlistTimer = null;
     }
+    resetHeaderInfo();
     stageNode.innerHTML = "";
 }
 
@@ -137,7 +153,30 @@ function renderPlaylist(items, loop = false) {
 async function renderSchedule(commandId, payload) {
     clearStage();
 
-    const isDoctor = payload.source_type === "DOCTOR_SCHEDULE";
+    const isDoctor = payload.source_type === "DOCTOR_SCHEDULE" || payload.source_type === "SCHEDULE";
+    
+    if (isDoctor && payload.all_doctor_schedules && Array.isArray(payload.all_doctor_schedules)) {
+        const schedules = payload.all_doctor_schedules;
+        
+        if (schedules.length) {
+            const outOfStationCount = schedules.filter(s => s.Status === "Out of Station").length;
+            const unavailableCount = schedules.filter(s => s.Status === "Unavailable").length;
+            
+            let marqueeText = "Doctor schedules";
+            if (outOfStationCount > 0) {
+                marqueeText = `${outOfStationCount} doctor(s) out of station`;
+            } else if (unavailableCount > 0) {
+                marqueeText = `${unavailableCount} doctor(s) unavailable`;
+            }
+            
+            showHeaderMarquee(marqueeText);
+            renderTable(schedules, "All Doctors Schedules");
+            setStatus(`Displaying all doctor schedules`);
+            await sendAck(commandId, "PLAYING", "All doctor schedules displayed");
+            return;
+        }
+    }
+
     const title = isDoctor ? "Doctor Schedule" : "OPD Schedule";
     const name = isDoctor
         ? payload.doctor_name || "Unknown doctor"
@@ -146,29 +185,25 @@ async function renderSchedule(commandId, payload) {
     const day = (isDoctor ? payload.doctor_schedule_day : payload.opd_schedule_day) || "Unknown day";
     const start = (isDoctor ? payload.doctor_schedule_start : payload.opd_schedule_start) || "--:--";
     const end = (isDoctor ? payload.doctor_schedule_end : payload.opd_schedule_end) || "--:--";
+    const isAvailable = payload.doctor_schedule_is_available !== false;
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "schedule-slide";
+    if (isDoctor) {
+        const marqueeText = isAvailable
+            ? `Doctor ${name} is available on ${day} ${start} - ${end}`
+            : `Doctor ${name} is NOT AVAILABLE on ${day} ${start} - ${end}`;
+        showHeaderMarquee(marqueeText);
+    }
 
-    wrapper.innerHTML = `
-        <h2 style="margin-bottom:1rem;">${title}</h2>
-        <div style="font-size:1.6rem; font-weight:bold;">
-            ${name}
-        </div>
-        ${
-            detail
-                ? `<div style="margin-top:0.5rem; color:#bbb;">${detail}</div>`
-                : ""
-        }
-        <div style="margin-top:1rem; font-size:1.2rem;">
-            ${day}
-        </div>
-        <div style="font-size:1.3rem;">
-            ${start} - ${end}
-        </div>
-    `;
+    const record = {
+        Schedule: title,
+        [isDoctor ? "Doctor" : "OPD Room"]: name,
+        [isDoctor ? "Specialization" : "Department"]: detail || "-",
+        Day: day,
+        Start: start,
+        End: end,
+    };
 
-    stageNode.appendChild(wrapper);
+    renderTable([record], title);
 
     setStatus(`Displaying ${isDoctor ? "doctor" : "OPD"} schedule: ${name}`);
     await sendAck(commandId, "PLAYING", `${isDoctor ? "Doctor" : "OPD"} schedule displayed`);
@@ -216,7 +251,11 @@ async function pollCommand() {
             return;
         }
 
-        if (payload.source_type === "DOCTOR_SCHEDULE" || payload.source_type === "OPD_SCHEDULE") {
+        if (
+            payload.source_type === "DOCTOR_SCHEDULE" ||
+            payload.source_type === "OPD_SCHEDULE" ||
+            payload.source_type === "SCHEDULE"
+        ) {
             await renderSchedule(data.command_id, payload);
             return;
         }

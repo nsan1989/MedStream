@@ -8,6 +8,7 @@ from devices.models import DeviceLog
 from devices.enums import LogType
 from layouts.models import Layout
 from playlists.models import PlaylistItem
+from schedules.models import Doctor, DoctorSchedule, OPDSchedule
 from django.utils import timezone
 
 
@@ -121,14 +122,59 @@ def BroadcastView(request):
                         "organization.",
                     )
                 elif doctor_schedule:
+                    all_doctors = Doctor.objects.filter(
+                        organization=user.organization,
+                        is_active=True,
+                    )
+                    if user.role == "STAFF":
+                        all_doctors = all_doctors.filter(facility=user.facility)
+
+                    all_doctor_schedules = (
+                        DoctorSchedule.objects.filter(
+                            doctor__in=all_doctors,
+                        )
+                        .select_related("doctor")
+                        .order_by("doctor__name", "day_of_week", "start_time")
+                    )
+
+                    doctor_schedule_items = []
+                    for sched in all_doctor_schedules:
+                        item = {
+                            "Doctor": sched.doctor.name,
+                            "Status": (
+                                "Out of Station"
+                                if (
+                                    sched.out_of_station_start_date
+                                    and sched.out_of_station_end_date
+                                )
+                                else (
+                                    "Available" if sched.is_available else "Unavailable"
+                                )
+                            ),
+                        }
+
+                        if (
+                            sched.out_of_station_start_date
+                            and sched.out_of_station_end_date
+                        ):
+                            item["From"] = sched.out_of_station_start_date.isoformat()
+                            item["To"] = sched.out_of_station_end_date.isoformat()
+                        else:
+                            item["Day"] = (
+                                sched.get_day_of_week_display()
+                                if sched.day_of_week is not None
+                                else "-"
+                            )
+                            item["Start"] = sched.start_time.isoformat()
+                            item["End"] = sched.end_time.isoformat()
+
+                        doctor_schedule_items.append(item)
+
                     payload.update(
                         {
-                            "source_type": "SCHEDULE",
+                            "source_type": "DOCTOR_SCHEDULE",
                             "doctor_schedule_id": str(doctor_schedule.id),
-                            "doctor_name": doctor_schedule.doctor.name,
-                            "doctor_schedule_day": doctor_schedule.get_day_of_week_display(),
-                            "doctor_schedule_start": doctor_schedule.start_time.isoformat(),
-                            "doctor_schedule_end": doctor_schedule.end_time.isoformat(),
+                            "all_doctor_schedules": doctor_schedule_items,
                         }
                     )
                     try:

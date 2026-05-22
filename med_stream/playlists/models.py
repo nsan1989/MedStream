@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from core.models import TimeStampedModel
 from accounts.models import CustomUser
 from media_library.models import MediaAsset
+from schedules.models import OPDSchedule, DoctorSchedule
 
 
 # Playlist model.
@@ -61,11 +62,7 @@ class Playlist(TimeStampedModel):
         if self.organization and self.facility:
             if self.facility.organization_id != self.organization_id:
                 raise ValidationError(
-                    {
-                        "facility": (
-                            "Facility must belong to the selected organization."
-                        )
-                    }
+                    {"facility": ("Facility must belong to the selected organization.")}
                 )
 
     def save(self, *args, **kwargs):
@@ -86,7 +83,23 @@ class PlaylistItem(TimeStampedModel):
     media_asset = models.ForeignKey(
         MediaAsset,
         on_delete=models.CASCADE,
-        related_name="playlist_items",
+        related_name="media_playlist_items",
+        null=True,
+        blank=True,
+    )
+    opd_schedule = models.ForeignKey(
+        OPDSchedule,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="opd_playlist_items",
+    )
+    doctor_schedule = models.ForeignKey(
+        DoctorSchedule,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="doctor_playlist_items",
     )
     order = models.PositiveIntegerField(default=0)
     duration = models.IntegerField(help_text="Duration in seconds")
@@ -103,29 +116,64 @@ class PlaylistItem(TimeStampedModel):
     def clean(self):
         super().clean()
 
+        # Ensure at least one content type is selected
+        if not any(
+            [
+                self.media_asset,
+                self.opd_schedule,
+                self.doctor_schedule,
+            ]
+        ):
+            raise ValidationError(
+                "Select at least one of media asset, OPD schedule, or doctor schedule."
+            )
+
+        # Duration validation
+        if self.media_asset:
+            if not self.duration or self.duration <= 0:
+                raise ValidationError(
+                    {
+                        "duration": (
+                            "Duration is required and must be greater than zero "
+                            "when media asset is selected."
+                        )
+                    }
+                )
+        else:
+            # Optional for schedule-only items
+            self.duration = None
+
+        # Order validation
         if self.order < 0:
             raise ValidationError({"order": "Order must be zero or greater."})
 
-        if self.duration <= 0:
-            raise ValidationError({"duration": "Duration must be greater than zero."})
+        # Organization validation
+        if self.media_asset:
+            playlist_org_id = self.playlist.organization_id
+            media_org_id = self.media_asset.organization_id
 
-        playlist_org_id = self.playlist.organization_id
-        media_org_id = self.media_asset.organization_id
-        if playlist_org_id and media_org_id and playlist_org_id != media_org_id:
-            raise ValidationError(
-                {
-                    "media_asset": (
-                        "Media asset must belong to the same organization as the playlist."
-                    )
-                }
-            )
+            if playlist_org_id and media_org_id and playlist_org_id != media_org_id:
+                raise ValidationError(
+                    {
+                        "media_asset": (
+                            "Media asset must belong to the same "
+                            "organization as the playlist."
+                        )
+                    }
+                )
 
-        if self.playlist.facility_id and self.media_asset.facility_id:
+        # Facility validation
+        if (
+            self.media_asset
+            and self.playlist.facility_id
+            and self.media_asset.facility_id
+        ):
             if self.media_asset.facility_id != self.playlist.facility_id:
                 raise ValidationError(
                     {
                         "media_asset": (
-                            "Media asset must belong to the same facility as the playlist."
+                            "Media asset must belong to the same "
+                            "facility as the playlist."
                         )
                     }
                 )
@@ -135,4 +183,5 @@ class PlaylistItem(TimeStampedModel):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.playlist.name} - {self.media_asset.title}"
+        content = self.media_asset.title if self.media_asset else "Schedule Item"
+        return f"{self.playlist.name} - {content}"
