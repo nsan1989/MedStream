@@ -45,9 +45,10 @@ function renderTable(data, title = "") {
     Object.keys(data[0]).forEach(key => {
         const th = document.createElement("th");
         th.innerText = key.replace(/_/g, " ").toUpperCase();
-        th.style.border = "1px solid #ddd";
+        th.style.border = "1px solid #000";
+        th.style.color = "#fff";
         th.style.padding = "14px";
-        th.style.background = "#f4f4f4";
+        th.style.background = "#4e0606";
         th.style.position = "sticky";
         th.style.top = "0";
         headerRow.appendChild(th);
@@ -62,9 +63,16 @@ function renderTable(data, title = "") {
     data.forEach(row => {
         const tr = document.createElement("tr");
 
-        Object.values(row).forEach(value => {
+        Object.entries(row).forEach(([key, value]) => {
             const td = document.createElement("td");
-            td.textContent = value;
+            td.textContent = value ?? (
+                key === "opd_room"
+                ? "Unknown OPD room"
+                : key === 
+                "day"
+                ? "Unknown day"
+                : "--:--"
+            );
             td.style.padding = "10px";
             td.style.border = "1px solid #ddd";
             td.style.textAlign = "center";
@@ -85,14 +93,43 @@ async function renderHtml(fileUrl) {
         const response = await fetch(fileUrl);
         const data = await response.json();
 
-        if (!data.length) {
-            stageNode.innerHTML = "<h2>No data available</h2>";
+        let renderData = data;
+
+        // Fix OPD payload
+        if (
+            data &&
+            data.source_type ===
+                "OPD_SCHEDULE"
+        ) {
+            renderData =
+                data.opd_schedules || [];
+        }
+
+        // No data
+        if (
+            !Array.isArray(
+                renderData
+            ) ||
+            !renderData.length
+        ) {
+            stageNode.innerHTML =
+                "<h2>No data available</h2>";
             return;
         }
 
-        renderTable(data);
+        renderTable(
+            renderData,
+            data.source_type ===
+                "OPD_SCHEDULE"
+                ? "Today's OPD Schedule"
+                : ""
+        );
     } catch (error) {
-        console.error("Error loading table:", error);
+        console.error(
+            "Error loading table:",
+            error
+        );
+
         stageNode.innerHTML =
             `<div style="color:red;">${error.message}</div>`;
     }

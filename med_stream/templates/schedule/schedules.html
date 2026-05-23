@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <!--
+    <!--OPD Room Data-->
     <div class="mb-4">
       <h3 class="text-uppercase">OPD Rooms</h3>
       <div class="table-responsive">
@@ -46,8 +46,10 @@
           <thead class="table-danger">
             <tr>
               <th scope="col">Name</th>
-              <th scope="col">Facility</th>
               <th scope="col">Organization</th>
+              <th scope="col">Facility</th>
+              <th scope="col">Block</th>
+              <th scope="col">Floor</th>
               <th scope="col">Status</th>
             </tr>
           </thead>
@@ -56,8 +58,10 @@
               {% for room in opd_rooms %}
                 <tr>
                   <td>{{ room.name }}</td>
-                  <td>{{ room.facility.name|default:"-" }}</td>
                   <td>{{ room.organization.name|default:"-" }}</td>
+                  <td>{{ room.facility.name|default:"-" }}</td>
+                  <td>{{ room.block.name|default:"-" }}</td>
+                  <td>{{ room.floor.name|default:"-" }}</td>
                   <td>{% if room.is_active %}Active{% else %}Inactive{% endif %}</td>
                 </tr>
               {% endfor %}
@@ -68,8 +72,9 @@
         </table>
       </div>
     </div>
-    -->
 
+
+    <!--OPD Schedules Data-->
     <div class="mb-4">
       <h3 class="text-uppercase fw-bold">OPD Schedules</h3>
       <div class="table-responsive">
@@ -106,6 +111,8 @@
       </div>
     </div>
 
+
+    <!--Doctor Schedules Data-->
     <div>
       <h3 class="text-uppercase fw-bold">Doctor Schedules</h3>
       <div class="table-responsive">
@@ -114,10 +121,9 @@
             <tr>
               <th scope="col">Doctor</th>
               <th scope="col">Facility</th>
-              <th scope="col">Day</th>
               <th scope="col">Start</th>
               <th scope="col">End</th>
-              <th scope="col">Available</th>
+              <th scope="col">Reason</th>
             </tr>
           </thead>
           <tbody class="table-info">
@@ -126,10 +132,9 @@
                 <tr>
                   <td>{{ schedule.doctor.name|default:"-" }}</td>
                   <td>{{ schedule.doctor.facility.name|default:"-" }}</td>
-                  <td>{{ schedule.get_day_of_week_display }}</td>
-                  <td>{{ schedule.start_time }}</td>
-                  <td>{{ schedule.end_time }}</td>
-                  <td>{% if schedule.is_available %}Yes{% else %}No{% endif %}</td>
+                  <td>{{ schedule.start_date }}</td>
+                  <td>{{ schedule.end_date }}</td>
+                  <td>{{ schedule.reason|default:"-" }}</td>
                 </tr>
               {% endfor %}
             {% else %}

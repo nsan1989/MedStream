@@ -13,6 +13,7 @@ import json
 from .models import Device
 from .models import DeviceLog
 from .enums import LogType
+from schedules.models import DoctorSchedule
 
 
 # Add device form.
@@ -221,5 +222,36 @@ def DevicePlayerAutoPage(request):
 @require_GET
 def DevicePlayerPage(request, device_id):
     device = get_object_or_404(Device, id=device_id, is_active=True)
-    context = {"device": device}
+    today = timezone.now().date()
+    off_duty_doctors = (
+        DoctorSchedule.objects.filter(
+            doctor__facility=device.facility,
+            end_date__gte=today,  # exclude past
+        )
+        .select_related("doctor")
+        .order_by(
+            "start_date",
+            "doctor__name",
+        )
+    )
+
+    off_duty_text = " | ".join(
+        [
+            (
+                f"Dr. {schedule.doctor.name} "
+                f"off duty from "
+                f"{schedule.start_date.strftime('%d %b')} "
+                f"to "
+                f"{schedule.end_date.strftime('%d %b')}"
+            )
+            for schedule in off_duty_doctors
+        ]
+    )
+
+    context = {
+        "device": device,
+        "off_duty_text": (
+            off_duty_text if off_duty_text else "No doctors are off duty today"
+        ),
+    }
     return render(request, "device/player.html", context)

@@ -140,10 +140,9 @@ class DoctorScheduleResource(resources.ModelResource):
         fields = (
             "id",
             "doctor",
-            "day_of_week",
-            "start_time",
-            "end_time",
-            "is_available",
+            "start_date",
+            "end_date",
+            "reason",
             "created_at",
             "updated_at",
         )
@@ -154,12 +153,11 @@ class DoctorScheduleAdmin(ImportExportModelAdmin):
     resource_class = DoctorScheduleResource
     list_display = (
         "doctor",
-        "day_of_week",
-        "start_time",
-        "end_time",
-        "is_available",
+        "start_date",
+        "end_date",
+        "reason",
     )
-    list_filter = ("day_of_week", "is_available", "created_at")
+    list_filter = ("start_date", "created_at")
     search_fields = ("doctor__name",)
-    ordering = ("day_of_week", "start_time")
+    ordering = ("start_date",)
     list_select_related = ("doctor",)

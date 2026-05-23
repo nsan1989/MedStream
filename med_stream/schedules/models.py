@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from core.models import TimeStampedModel
 from organizations.models import Organization
 from facilities.models import Facility, Block, Floor
+from django.utils import timezone
 
 
 # Department model.
@@ -155,6 +156,50 @@ class OPDRoom(TimeStampedModel):
         return self.name
 
 
+# Doctor schedule model.
+class DoctorSchedule(TimeStampedModel):
+    doctor = models.ForeignKey(
+        Doctor, on_delete=models.CASCADE, related_name="doctor_schedules"
+    )
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    reason = models.TextField(blank=True, null=True)
+
+    def clean(self):
+        super().clean()
+
+        if self.start_date > self.end_date:
+            raise ValidationError(
+                {
+                    "end_date": "Out of station end date must be on or after the start date."
+                }
+            )
+
+        overlapping_qs = DoctorSchedule.objects.filter(
+            doctor=self.doctor,
+            start_date__lte=self.end_date,
+            end_date__gte=self.start_date,
+        )
+
+        if self.pk:
+            overlapping_qs = overlapping_qs.exclude(pk=self.pk)
+
+        if overlapping_qs.exists():
+            raise ValidationError(
+                {
+                    "start_date": (
+                        "This out-of-station period overlaps with an existing record."
+                    )
+                }
+            )
+
+    def __str__(self):
+        return (
+            f"{self.doctor} out of station "
+            f"from {self.start_date} to {self.end_date}"
+        )
+
+
 # OPD Schedule model.
 class OPDSchedule(TimeStampedModel):
     doctor = models.ForeignKey(
@@ -183,6 +228,9 @@ class OPDSchedule(TimeStampedModel):
     def clean(self):
         super().clean()
 
+        doctor = self.doctor if self.doctor_id else None
+        opd_room = self.opd_room if self.opd_room_id else None
+
         # Prevent None comparison
         if self.start_time and self.end_time:
             if self.start_time >= self.end_time:
@@ -191,9 +239,9 @@ class OPDSchedule(TimeStampedModel):
                 )
 
         # Prevent doctor/opd_room None error
-        if self.doctor and self.opd_room:
-            doctor_org_id = self.doctor.organization_id
-            room_org_id = self.opd_room.organization_id
+        if doctor and opd_room:
+            doctor_org_id = doctor.organization_id
+            room_org_id = opd_room.organization_id
 
             if doctor_org_id and room_org_id and doctor_org_id != room_org_id:
                 raise ValidationError(
@@ -205,20 +253,33 @@ class OPDSchedule(TimeStampedModel):
                     }
                 )
 
+        # Doctor out of station validation
+        if doctor and self.day_of_week == timezone.now().date().weekday():
+            today = timezone.now().date()
+
+            is_out_of_station = DoctorSchedule.objects.filter(
+                doctor=doctor,
+                start_date__lte=today,
+                end_date__gte=today,
+            ).exists()
+
+            if is_out_of_station:
+                raise ValidationError(
+                    {"doctor": ("Doctor is " "currently " "out of station.")}
+                )
+
         # Run overlap validation only if required fields exist
         if all(
             [
-                self.doctor,
-                self.opd_room,
+                doctor,
+                opd_room,
                 self.day_of_week is not None,
                 self.start_time,
                 self.end_time,
             ]
         ):
             schedule_qs = OPDSchedule.objects.filter(
-                doctor=self.doctor,
-                opd_room=self.opd_room,
-                day_of_week=self.day_of_week,
+                doctor=doctor, day_of_week=self.day_of_week
             )
 
             if self.pk:
@@ -243,97 +304,6 @@ class OPDSchedule(TimeStampedModel):
 
         return (
             f"{doctor_name} - {room_name} "
-            f"on {self.get_day_of_week_display()} "
+            f"{self.get_day_of_week_display()} "
             f"from {self.start_time} to {self.end_time}"
         )
-
-
-# Doctor schedule model.
-class DoctorSchedule(TimeStampedModel):
-    doctor = models.ForeignKey(
-        Doctor, on_delete=models.CASCADE, related_name="doctor_schedules"
-    )
-    day_of_week = models.IntegerField(
-        choices=[
-            (0, "Monday"),
-            (1, "Tuesday"),
-            (2, "Wednesday"),
-            (3, "Thursday"),
-            (4, "Friday"),
-            (5, "Saturday"),
-            (6, "Sunday"),
-        ],
-        null=True,
-        blank=True,
-    )
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    out_of_station_start_date = models.DateField(null=True, blank=True)
-    out_of_station_end_date = models.DateField(null=True, blank=True)
-    is_available = models.BooleanField(default=True)
-
-    def clean(self):
-        super().clean()
-
-        if self.start_time >= self.end_time:
-            raise ValidationError({"end_time": "End time must be after start time."})
-
-        if bool(self.out_of_station_start_date) ^ bool(self.out_of_station_end_date):
-            raise ValidationError(
-                {
-                    "out_of_station_start_date": (
-                        "Both out of station start and end dates must be set together."
-                    ),
-                    "out_of_station_end_date": (
-                        "Both out of station start and end dates must be set together."
-                    ),
-                }
-            )
-
-        if self.out_of_station_start_date and self.out_of_station_end_date:
-            if self.out_of_station_start_date > self.out_of_station_end_date:
-                raise ValidationError(
-                    {
-                        "out_of_station_end_date": "Out of station end date must be on or after the start date."
-                    }
-                )
-            if self.is_available:
-                raise ValidationError(
-                    {
-                        "is_available": "Out of station schedules must be marked unavailable."
-                    }
-                )
-
-        if not self.out_of_station_start_date and not self.out_of_station_end_date:
-            if self.day_of_week is None:
-                raise ValidationError(
-                    {
-                        "day_of_week": "Day of week is required when out of station dates are not set."
-                    }
-                )
-
-        if self.day_of_week is not None:
-            schedule_qs = DoctorSchedule.objects.filter(
-                doctor=self.doctor, day_of_week=self.day_of_week
-            )
-            if self.pk:
-                schedule_qs = schedule_qs.exclude(pk=self.pk)
-            for schedule in schedule_qs:
-                if (
-                    self.start_time < schedule.end_time
-                    and self.end_time > schedule.start_time
-                ):
-                    raise ValidationError(
-                        {
-                            "start_time": "This schedule overlaps with an existing schedule for the doctor."
-                        }
-                    )
-
-    def __str__(self):
-        if self.out_of_station_start_date and self.out_of_station_end_date:
-            return (
-                f"{self.doctor} out of station from "
-                f"{self.out_of_station_start_date} to {self.out_of_station_end_date}"
-            )
-
-        return f"{self.doctor} on {self.get_day_of_week_display()} from {self.start_time} to {self.end_time}"

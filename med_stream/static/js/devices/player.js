@@ -29,18 +29,6 @@ function applyDeviceSettings() {
     }
 }
 
-function resetHeaderInfo() {
-    headerDeviceInfo.style.display = "block";
-    headerMarquee.style.display = "none";
-    headerMarqueeText.textContent = "";
-}
-
-function showHeaderMarquee(text) {
-    headerDeviceInfo.style.display = "none";
-    headerMarqueeText.textContent = text;
-    headerMarquee.style.display = "block";
-}
-
 applyDeviceSettings();
 
 function absoluteUrl(rawUrl) {
@@ -57,7 +45,6 @@ function clearStage() {
         clearInterval(playlistTimer);
         playlistTimer = null;
     }
-    resetHeaderInfo();
     stageNode.innerHTML = "";
 }
 
@@ -169,7 +156,6 @@ async function renderSchedule(commandId, payload) {
                 marqueeText = `${unavailableCount} doctor(s) unavailable`;
             }
             
-            showHeaderMarquee(marqueeText);
             renderTable(schedules, "All Doctors Schedules");
             setStatus(`Displaying all doctor schedules`);
             await sendAck(commandId, "PLAYING", "All doctor schedules displayed");
@@ -177,36 +163,133 @@ async function renderSchedule(commandId, payload) {
         }
     }
 
-    const title = isDoctor ? "Doctor Schedule" : "OPD Schedule";
-    const name = isDoctor
-        ? payload.doctor_name || "Unknown doctor"
-        : payload.opd_room_name || "Unknown OPD room";
-    const detail = (isDoctor ? payload.specialization : payload.department_name) || "";
-    const day = (isDoctor ? payload.doctor_schedule_day : payload.opd_schedule_day) || "Unknown day";
-    const start = (isDoctor ? payload.doctor_schedule_start : payload.opd_schedule_start) || "--:--";
-    const end = (isDoctor ? payload.doctor_schedule_end : payload.opd_schedule_end) || "--:--";
-    const isAvailable = payload.doctor_schedule_is_available !== false;
+    if (
+        payload.source_type ===
+            "OPD_SCHEDULE" &&
+        payload.opd_schedules &&
+        Array.isArray(
+            payload.opd_schedules
+        )
+    ) {
+        const schedules =
+            payload.opd_schedules;
 
-    if (isDoctor) {
-        const marqueeText = isAvailable
-            ? `Doctor ${name} is available on ${day} ${start} - ${end}`
-            : `Doctor ${name} is NOT AVAILABLE on ${day} ${start} - ${end}`;
-        showHeaderMarquee(marqueeText);
+        if (schedules.length) {
+
+            const tableData =
+                schedules.map(item => ({
+                    Schedule:
+                        "OPD Schedule",
+                    "OPD Room":
+                        item.opd_room ||
+                        "Unknown OPD room",
+                    Department:
+                        item.department ||
+                        "-",
+                    Day:
+                        item.day ||
+                        "Unknown day",
+                    Start:
+                        item.start_time ||
+                        "--:--",
+                    End:
+                        item.end_time ||
+                        "--:--",
+                }));
+
+            renderTable(
+                tableData,
+                "Today's OPD Schedule"
+            );
+
+            setStatus(
+                "Displaying OPD schedule"
+            );
+
+            await sendAck(
+                commandId,
+                "PLAYING",
+                "OPD schedule displayed"
+            );
+
+            return;
+        }
     }
+
+    // SINGLE RECORD FALLBACK
+    const title = isDoctor
+        ? "Doctor Schedule"
+        : "OPD Schedule";
+
+    const name = isDoctor
+        ? payload.doctor_name ||
+          "Unknown doctor"
+        : payload.opd_room_name ||
+          "Unknown OPD room";
+
+    const detail = (
+        isDoctor
+            ? payload.specialization
+            : payload.department_name
+    ) || "-";
+
+    const day = (
+        isDoctor
+            ? payload.doctor_schedule_day
+            : payload.opd_schedule_day
+    ) || "Unknown day";
+
+    const start = (
+        isDoctor
+            ? payload.doctor_schedule_start
+            : payload.opd_schedule_start
+    ) || "--:--";
+
+    const end = (
+        isDoctor
+            ? payload.doctor_schedule_end
+            : payload.opd_schedule_end
+    ) || "--:--";
+
+    const isAvailable =
+        payload.doctor_schedule_is_available !== false;
 
     const record = {
         Schedule: title,
-        [isDoctor ? "Doctor" : "OPD Room"]: name,
-        [isDoctor ? "Specialization" : "Department"]: detail || "-",
+        [isDoctor
+            ? "Doctor"
+            : "OPD Room"]: name,
+        [isDoctor
+            ? "Specialization"
+            : "Department"]:
+            detail,
         Day: day,
         Start: start,
         End: end,
     };
 
-    renderTable([record], title);
+    renderTable(
+        [record],
+        title
+    );
 
-    setStatus(`Displaying ${isDoctor ? "doctor" : "OPD"} schedule: ${name}`);
-    await sendAck(commandId, "PLAYING", `${isDoctor ? "Doctor" : "OPD"} schedule displayed`);
+    setStatus(
+        `Displaying ${
+            isDoctor
+                ? "doctor"
+                : "OPD"
+        } schedule: ${name}`
+    );
+
+    await sendAck(
+        commandId,
+        "PLAYING",
+        `${
+            isDoctor
+                ? "Doctor"
+                : "OPD"
+        } schedule displayed`
+    );
 }
 
 async function pollCommand() {

@@ -16,6 +16,9 @@ from .models import (
 )
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
+from django.utils import timezone
+
+today = timezone.now().date()
 
 
 # Add department view.
@@ -219,13 +222,17 @@ def SchedulesView(request):
             OPDSchedule.objects.filter(
                 doctor__organization=user.organization,
                 opd_room__organization=user.organization,
+                day_of_week=today.weekday(),
+                is_available=True,
             )
             .select_related(
                 "doctor",
                 "doctor__facility",
                 "opd_room",
             )
-            .order_by("day_of_week", "start_time")
+            .order_by(
+                "start_time",
+            )
         )
         doctor_schedules = (
             DoctorScheduleModel.objects.filter(
@@ -235,7 +242,9 @@ def SchedulesView(request):
                 "doctor",
                 "doctor__facility",
             )
-            .order_by("day_of_week", "start_time")
+            .order_by(
+                "start_date",
+            )
         )
     elif user.role == "STAFF":
         opd_rooms = (
@@ -252,13 +261,17 @@ def SchedulesView(request):
                 doctor__organization=user.organization,
                 doctor__facility=user.facility,
                 opd_room__facility=user.facility,
+                day_of_week=today.weekday(),
+                is_available=True,
             )
             .select_related(
                 "doctor",
                 "doctor__facility",
                 "opd_room",
             )
-            .order_by("day_of_week", "start_time")
+            .order_by(
+                "start_time",
+            )
         )
         doctor_schedules = (
             DoctorScheduleModel.objects.filter(
@@ -269,7 +282,9 @@ def SchedulesView(request):
                 "doctor",
                 "doctor__facility",
             )
-            .order_by("day_of_week", "start_time")
+            .order_by(
+                "start_date",
+            )
         )
 
     context = {
