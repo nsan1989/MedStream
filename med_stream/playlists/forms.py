@@ -119,7 +119,7 @@ class PlaylistItemForm(forms.ModelForm):
         doctor_qs = DoctorSchedule.objects.none()
 
         if self.user and self.user.organization:
-            doctor_qs = OPDSchedule.objects.filter(
+            doctor_qs = DoctorSchedule.objects.filter(
                 doctor__organization=self.user.organization,
             ).select_related("doctor", "doctor__facility")
 
@@ -129,7 +129,7 @@ class PlaylistItemForm(forms.ModelForm):
                 )
 
         self.fields["doctor_schedules"].queryset = doctor_qs.order_by(
-            "day_of_week", "start_time"
+            "start_date",
         )
 
     def clean(self):

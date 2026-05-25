@@ -21,6 +21,7 @@ class DeviceAgent:
         self.last_command_id: Optional[str] = None
         self.session = requests.Session()
         self.ffplay = shutil.which("ffplay")
+        self.current_process = None
 
     @property
     def next_command_url(self) -> str:
@@ -55,15 +56,31 @@ class DeviceAgent:
 
         command_id = data.get("command_id")
         payload = data.get("payload") or {}
-        if not command_id or payload.get("command") != "PLAY":
+        if not command_id:
             return
 
         if command_id == self.last_command_id:
             return
 
         self.last_command_id = command_id
+        command = payload.get("command")
         source_type = payload.get("source_type")
         loop = bool(payload.get("loop", False))
+
+        if command == "STOP":
+
+            ok = self.stop_playback()
+
+            self.send_ack(
+                command_id,
+                "STOPPED" if ok else "FAILED",
+                ("Playback stopped." if ok else "Failed to stop playback."),
+            )
+
+            return
+
+        if command != "PLAY":
+            return
 
         if source_type == "MEDIA_ASSET":
             ok = self.play_media_asset(payload, loop=loop)
@@ -79,8 +96,30 @@ class DeviceAgent:
                 "PLAYED" if ok else "FAILED",
                 "Playlist playback executed." if ok else "Playlist playback failed.",
             )
+        elif source_type == "OPD_SCHEDULE":
+            print("[OPD SCHEDULE]")
+            print(payload.get("opd_schedule"))
+
+            self.send_ack(
+                command_id,
+                "PLAYED",
+                "OPD schedule playback executed.",
+            )
+        elif source_type == "DOCTOR_SCHEDULE":
+            print("[DOCTOR SCHEDULE]")
+            print(payload.get("doctor_schedule"))
+
+            self.send_ack(
+                command_id,
+                "PLAYED",
+                "Doctor schedule playback executed.",
+            )
         else:
-            self.send_ack(command_id, "FAILED", "Unknown source type.")
+            self.send_ack(
+                command_id,
+                "FAILED",
+                f"Unknown source type: {source_type}",
+            )
 
     def play_media_asset(self, payload: Dict[str, Any], loop: bool = False) -> bool:
         file_url = payload.get("file_url")
@@ -123,6 +162,23 @@ class DeviceAgent:
                 break
         return True
 
+    def stop_playback(self) -> bool:
+        try:
+            if self.current_process and self.current_process.poll() is None:
+                print("[STOP] Terminating playback")
+                self.current_process.terminate()
+
+                try:
+                    self.current_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    print("[STOP] Force killing playback.")
+                    self.current_process.kill()
+                self.current_process = None
+            return True
+        except Exception as exc:
+            print(f"[STOP ERROR] {exc}")
+            return False
+
     def play_with_ffplay(
         self, media_url: str, media_type: str, duration: int, loop: bool = False
     ) -> bool:
@@ -153,8 +209,17 @@ class DeviceAgent:
 
         try:
             print(f"[FFPLAY CMD] {' '.join(cmd)}")
-            result = subprocess.run(cmd, check=False)
-            return result.returncode == 0
+            self.current_process = subprocess.Popen(cmd)
+            if media_type == "IMAGE":
+                try:
+                    self.current_process.wait(timeout=max(1, duration))
+                except subprocess.TimeoutExpired:
+                    self.current_process.terminate()
+            else:
+                self.current_process.wait()
+            success = self.current_process.returncode == 0
+            self.current_process = None
+            return success
         except Exception as exc:
             print(f"[PLAY ERROR] {exc}")
             return False

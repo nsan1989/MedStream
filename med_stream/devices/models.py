@@ -66,7 +66,7 @@ class DeviceHealth(TimeStampedModel):
         Device, on_delete=models.CASCADE, related_name="health"
     )
     status = models.CharField(
-        max_length=20, choices=DeviceStatus.choices, default=DeviceStatus.ACTIVE
+        max_length=20, choices=DeviceStatus.choices, default=DeviceStatus.ONLINE
     )
     last_seen_at = models.DateTimeField(auto_now=True)
     cpu_usage = models.FloatField(default=0.0)

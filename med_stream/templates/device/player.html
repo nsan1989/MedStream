@@ -16,10 +16,12 @@
                 font-family: Arial, sans-serif;
             }
             .player-header {
+                position: fixed;
+                width: 100%;
+                padding: 12px 16px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 14px 20px;
                 background: linear-gradient(90deg, #09101b, #121a29);
                 min-height: 64px;
                 gap: 16px;
@@ -65,14 +67,11 @@
     <body>
         <div class="player-shell">
             <div class="player-header">
-                <div class="player-header-left">
-                    <div id="player-marquee" class="marquee-wrap">
-                        <span class="marquee-text" id="player-marquee-text">
-                            {{ off_duty_text }}
-                        </span>
-                    </div>
+                <div id="player-marquee" class="marquee-wrap">
+                    <span class="marquee-text" id="player-marquee-text">
+                        {{ off_duty_text }}
+                    </span>
                 </div>
-                <div id="player-status" class="status">Waiting for command...</div>
             </div>
             <div id="player-stage" class="stage">
                 <div class="placeholder">No media command received yet.</div>

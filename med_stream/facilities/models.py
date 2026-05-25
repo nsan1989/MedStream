@@ -62,6 +62,7 @@ class Block(TimeStampedModel):
         Facility, on_delete=models.CASCADE, related_name="blocks", null=True, blank=True
     )
     name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Block"
@@ -92,6 +93,7 @@ class Floor(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     block = models.ForeignKey(Block, on_delete=models.CASCADE, related_name="locations")
     name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Floor"

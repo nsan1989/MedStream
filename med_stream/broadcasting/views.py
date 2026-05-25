@@ -1,15 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from .models import BroadcastSession
 from .forms import DevicePlaybackForm
-from devices.models import DeviceLog
+from devices.models import DeviceLog, Device
 from devices.enums import LogType
 from layouts.models import Layout
 from playlists.models import PlaylistItem
 from schedules.models import Doctor, DoctorSchedule, OPDSchedule
 from django.utils import timezone
+from .enums import BroadcastStatus
 
 
 def _get_broadcast_layout(device, organization):
@@ -98,6 +99,21 @@ def BroadcastView(request):
                             ),
                         }
                     )
+                    try:
+                        BroadcastSession.objects.create(
+                            device=device,
+                            media=media_asset,
+                            layout=None,
+                            started_at=timezone.now(),
+                            organization=user.organization,
+                            facility=device.facility,
+                        )
+
+                    except ValidationError as exc:
+                        playback_form.add_error(
+                            None,
+                            (exc.messages if exc.messages else str(exc)),
+                        )
 
                 # PLAYLIST
                 elif playlist:
@@ -394,3 +410,110 @@ def BroadcastView(request):
         "broadcast/broadcasts.html",
         context,
     )
+
+
+# Stop broadcast view.
+@login_required
+def StopBroadcastView(
+    request,
+    device_id,
+):
+    user = request.user
+
+    device = get_object_or_404(
+        Device,
+        id=device_id,
+    )
+
+    # STAFF restriction
+    if user.role == "STAFF" and device.facility != user.facility:
+        raise PermissionDenied
+
+    broadcast = (
+        BroadcastSession.objects.filter(
+            device=device,
+            ended_at__isnull=True,
+        )
+        .order_by("-started_at")
+        .first()
+    )
+
+    if broadcast:
+        broadcast.ended_at = timezone.now()
+        broadcast.status = BroadcastStatus.COMPLETED
+        broadcast.save(update_fields=["ended_at", "status"])
+
+    payload = {
+        "command": "STOP",
+        "issued_at": (timezone.now().isoformat()),
+    }
+
+    DeviceLog.objects.create(
+        device=device,
+        log_type=LogType.INFO,
+        message=("Stop command issued"),
+        metadata=payload,
+    )
+
+    messages.success(
+        request,
+        (f"Stop command sent " f"to {device.name}."),
+    )
+
+    return redirect("broadcasts")
+
+
+# All broadcast view.
+@login_required
+def AllBroadcastView(request):
+    user = request.user
+
+    if user.role not in [
+        "ADMIN",
+        "STAFF",
+    ]:
+        raise PermissionDenied
+
+    broadcasts = BroadcastSession.objects.none()
+
+    if user.role == "ADMIN":
+        broadcasts = (
+            BroadcastSession.objects.filter(
+                organization=user.organization,
+            )
+            .select_related(
+                "organization",
+                "facility",
+                "device",
+                "doctor_schedule",
+                "doctor_schedule__doctor",
+                "opdschedule",
+                "opdschedule__opd_room",
+                "layout",
+            )
+            .order_by("-started_at")
+        )
+
+    elif user.role == "STAFF":
+        broadcasts = (
+            BroadcastSession.objects.filter(
+                organization=user.organization,
+                facility=user.facility,
+            )
+            .select_related(
+                "organization",
+                "facility",
+                "device",
+                "doctor_schedule",
+                "doctor_schedule__doctor",
+                "opdschedule",
+                "opdschedule__opd_room",
+                "layout",
+            )
+            .order_by("-started_at")
+        )
+
+    context = {
+        "broadcasts": broadcasts,
+    }
+    return render(request, "broadcast/all_broadcast.html", context)

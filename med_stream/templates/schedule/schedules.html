@@ -50,7 +50,6 @@
               <th scope="col">Facility</th>
               <th scope="col">Block</th>
               <th scope="col">Floor</th>
-              <th scope="col">Status</th>
             </tr>
           </thead>
           <tbody class="table-info">
@@ -62,7 +61,6 @@
                   <td>{{ room.facility.name|default:"-" }}</td>
                   <td>{{ room.block.name|default:"-" }}</td>
                   <td>{{ room.floor.name|default:"-" }}</td>
-                  <td>{% if room.is_active %}Active{% else %}Inactive{% endif %}</td>
                 </tr>
               {% endfor %}
             {% else %}

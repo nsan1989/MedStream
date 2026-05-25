@@ -8,6 +8,7 @@ from layouts.models import Layout
 from .enums import BroadcastStatus
 from organizations.models import Organization
 from facilities.models import Facility
+from media_library.models import MediaAsset
 
 
 # Broadcast session model.
@@ -34,6 +35,13 @@ class BroadcastSession(TimeStampedModel):
         DoctorSchedule,
         on_delete=models.CASCADE,
         related_name="broadcast_doctor",
+        null=True,
+        blank=True,
+    )
+    media = models.ForeignKey(
+        MediaAsset,
+        on_delete=models.CASCADE,
+        related_name="broadcast_media",
         null=True,
         blank=True,
     )

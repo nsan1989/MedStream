@@ -1,0 +1,118 @@
+{% extends "core/index.html" %}
+{% load bootstrap_icons %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+  Broadcasts
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link
+    rel="preload"
+    href="{% static 'css/broadcasting/all_broadcast.css' %}"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'"
+  >
+  <noscript><link rel="stylesheet" href="{% static 'css/broadcasting/all_broadcast.css' %}"></noscript>
+{% endblock %}
+
+
+{% block app_content %}
+  <div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            {% if request.user.role == 'ADMIN' %}
+              <a href="{% url 'admin_dashboard' %}">
+                {% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small>
+              </a>
+            {% elif request.user.role == 'STAFF' %}
+              <a href="{% url 'staff_dashboard' %}">
+                {% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small>
+              </a>
+            {% endif %}
+          </li>
+          <li class="breadcrumb-item"><a href="{% url 'broadcasts' %}"><small>Broadcasts</small></a></li>
+          <li class="breadcrumb-item"><small>All Broadcasts</small></li>
+        </ol>
+      </nav>
+    </div>
+    <h3 class="text-uppercase">Broadcast Sessions</h3>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead class="table-danger">
+          <tr>
+            <th scope="col">Organization</th>
+            <th scope="col">Facility</th>
+            <th scope="col">Device</th>
+            <th scope="col">Broadcast Type</th>
+            <th scope="col">Started</th>
+            <th scope="col">Ended</th>
+            <th scope="col">Status</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody class="table-info">
+          {% if broadcasts %}
+            {% for item in broadcasts %}
+              <tr>
+                <td>{{ item.organization.name|default:"-" }}</td>
+                <td>{{ item.facility.name|default:"-" }}</td>
+                <td>{{ item.device.name|default:"-" }}</td>
+                <td>
+                  {% if item.doctor_schedule %}
+                    <strong>Doctor Schedule</strong><br>
+
+                    {{ item.doctor_schedule.doctor.name|default:"-" }}<br>
+
+                    {{ item.doctor_schedule.get_day_of_week_display }}<br>
+
+                    {{ item.doctor_schedule.start_time }}
+                    -
+                    {{ item.doctor_schedule.end_time }}
+
+                  {% elif item.opdschedule %}
+                    <strong>OPD Schedule</strong><br>
+
+                    {{ item.opdschedule.opd_room.name|default:"-" }}<br>
+
+                    {{ item.opdschedule.get_day_of_week_display }}<br>
+
+                    {{ item.opdschedule.start_time }}
+                    -
+                    {{ item.opdschedule.end_time }}
+
+                  {% elif item.media %}
+                    <strong>Media</strong><br>
+
+                    {{ item.media.title|default:"-" }}<br>
+
+                    Type:{{ item.media.media_type|default:"-" }}
+
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ item.started_at }}</td>
+                <td>{{ item.ended_at|default:"-" }}</td>
+                <td>{{ item.get_status_display }}</td>
+                <td><a class="btn btn-danger" href="{% url 'stop_broadcast' item.device.id %}">STOP</a></td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9">No broadcast sessions found.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

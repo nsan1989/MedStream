@@ -11,8 +11,8 @@ class DeviceType(models.TextChoices):
 
 # Device status choices.
 class DeviceStatus(models.TextChoices):
-    ACTIVE = "ACTIVE", "Active"
-    INACTIVE = "INACTIVE", "Inactive"
+    ONLINE = "ONLINE", "Online"
+    OFFLINE = "OFFLINE", "Offline"
     MAINTENANCE = "MAINTENANCE", "Maintenance"
     DECOMMISSIONED = "DECOMMISSIONED", "Decommissioned"
 
