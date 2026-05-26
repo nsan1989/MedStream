@@ -1,24 +1,130 @@
 @import url("../../css/common/style.css");
 
-
 .home-wrapper {
     display: flex;
-    flex-direction: column;;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: var(--primary-color);
+    background: var(--primary-color);
     color: var(--secondary-color);
+    text-align: center;
+    padding: 2rem;
+    overflow: hidden; /* Ensures content stays within the viewport */
+    position: relative;
 }
 
+.content-container {
+    /* Glassmorphism effect for the content box */
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3rem 4rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    backdrop-filter: blur(4.5px);
+    -webkit-backdrop-filter: blur(4.5px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    max-width: 650px;
+    width: 100%;
+    animation: fadeIn 0.8s ease-out;
+    z-index: 1;
+}
+
+.top-content {
+    margin-bottom: 2.5rem;
+}
+
+.top-content h1 {
+    font-size: 3.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+}
+
+.top-content p {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+}
 
 .login-link {
     text-decoration: none;
-    color: var(--tertiary-color);
-    cursor: pointer;
+    background-color: var(--tertiary-color);
+    color: var(--secondary-color);
+    padding: 0.9rem 2.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .login-link:hover {
-    color: var(--secondary-color);
-    text-decoration: underline;
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.waves-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 0;
+}
+
+.waves {
+    position:relative;
+    width: 100%;
+    height:15vh;
+    margin-bottom:-7px; /*Fix for safari gap*/
+    min-height:100px;
+    max-height:150px;
+}
+
+.parallax > use {
+    animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
+}
+.parallax > use:nth-child(1) {
+    animation-delay: -2s;
+    animation-duration: 7s;
+}
+.parallax > use:nth-child(2) {
+    animation-delay: -3s;
+    animation-duration: 10s;
+}
+.parallax > use:nth-child(3) {
+    animation-delay: -4s;
+    animation-duration: 13s;
+}
+.parallax > use:nth-child(4) {
+    animation-delay: -5s;
+    animation-duration: 20s;
+}
+@keyframes move-forever {
+    0% {
+        transform: translate3d(-90px,0,0);
+    }
+    100% {
+        transform: translate3d(85px,0,0);
+    }
+}
+
+@media (max-width: 768px) {
+    .waves {
+        height:40px;
+        min-height:40px;
+    }
 }

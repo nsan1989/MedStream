@@ -100,7 +100,13 @@
                 <td>{{ item.started_at }}</td>
                 <td>{{ item.ended_at|default:"-" }}</td>
                 <td>{{ item.get_status_display }}</td>
-                <td><a class="btn btn-danger" href="{% url 'stop_broadcast' item.device.id %}">STOP</a></td>
+                <td>
+                  {% if not item.ended_at and item.status != "COMPLETED" %}
+                    <a class="btn btn-danger" href="{% url 'stop_broadcast' item.device.id %}">STOP</a>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
               </tr>
             {% endfor %}
           {% else %}

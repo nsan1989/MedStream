@@ -14,6 +14,9 @@ document.body.classList.add(deviceTypeClass);
 document.body.classList.add(deviceOrientation.toLowerCase());
 
 function setStatus(text, isError = false) {
+    if (!statusNode) {
+        return;
+    }
     statusNode.textContent = text;
     statusNode.style.color = isError ? "#ff9999" : "#9ad39a";
 }
@@ -46,6 +49,62 @@ function clearStage() {
         playlistTimer = null;
     }
     stageNode.innerHTML = "";
+}
+
+function renderFallbackTable(rows, title) {
+    clearStage();
+    const wrapper = document.createElement("div");
+    wrapper.style.padding = "16px";
+    wrapper.style.boxSizing = "border-box";
+    wrapper.style.width = "100%";
+    wrapper.style.height = "100%";
+    wrapper.style.overflow = "auto";
+    wrapper.style.background = "#0b0f14";
+    wrapper.style.color = "#fff";
+
+    if (title) {
+        const heading = document.createElement("h2");
+        heading.textContent = title;
+        heading.style.margin = "0 0 12px 0";
+        heading.style.fontSize = "28px";
+        wrapper.appendChild(heading);
+    }
+
+    const table = document.createElement("table");
+    table.style.width = "100%";
+    table.style.borderCollapse = "collapse";
+    table.style.background = "#fff";
+    table.style.color = "#000";
+
+    const headers = Object.keys(rows[0] || {});
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    headers.forEach((key) => {
+        const th = document.createElement("th");
+        th.textContent = key;
+        th.style.border = "1px solid #ddd";
+        th.style.padding = "10px";
+        th.style.background = "#e9eef5";
+        headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    rows.forEach((row) => {
+        const tr = document.createElement("tr");
+        headers.forEach((key) => {
+            const td = document.createElement("td");
+            td.textContent = row[key] ?? "-";
+            td.style.border = "1px solid #ddd";
+            td.style.padding = "10px";
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+    stageNode.appendChild(wrapper);
 }
 
 async function sendAck(commandId, status, message) {
@@ -180,6 +239,9 @@ async function renderSchedule(commandId, payload) {
                 schedules.map(item => ({
                     Schedule:
                         "OPD Schedule",
+                    Doctor:
+                        item.doctor ||
+                        "Unknown doctor",
                     "OPD Room":
                         item.opd_room ||
                         "Unknown OPD room",
@@ -197,10 +259,17 @@ async function renderSchedule(commandId, payload) {
                         "--:--",
                 }));
 
-            renderTable(
-                tableData,
-                "Today's OPD Schedule"
-            );
+            if (typeof renderTable === "function") {
+                renderTable(
+                    tableData,
+                    "Today's OPD Schedule"
+                );
+            } else {
+                renderFallbackTable(
+                    tableData,
+                    "Today's OPD Schedule"
+                );
+            }
 
             setStatus(
                 "Displaying OPD schedule"
@@ -307,6 +376,14 @@ async function pollCommand() {
 
         lastCommandId = data.command_id;
         const payload = data.payload;
+
+        if (payload.command === "STOP") {
+            clearStage();
+            stageNode.innerHTML = '<div class="placeholder">Playback stopped.</div>';
+            setStatus("Playback stopped");
+            await sendAck(data.command_id, "STOPPED", "Playback stopped");
+            return;
+        }
 
         if (payload.command !== "PLAY") {
             return;

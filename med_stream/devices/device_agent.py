@@ -98,7 +98,7 @@ class DeviceAgent:
             )
         elif source_type == "OPD_SCHEDULE":
             print("[OPD SCHEDULE]")
-            print(payload.get("opd_schedule"))
+            print(payload.get("opd_schedules"))
 
             self.send_ack(
                 command_id,

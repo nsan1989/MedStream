@@ -65,6 +65,7 @@
         </style>
     </head>
     <body>
+        {% now "U" as cache_bust %}
         <div class="player-shell">
             <div class="player-header">
                 <div id="player-marquee" class="marquee-wrap">
@@ -78,12 +79,12 @@
             </div>
         </div>
 
-        <script src="{% static 'js/devices/player_image.js' %}"></script>
-        <script src="{% static 'js/devices/player_video.js' %}"></script>
-        <script src="{% static 'js/devices/player_audio.js' %}"></script>
-        <script src="{% static 'js/devices/player_pdf.js' %}"></script>
-        <script src="{% static 'js/devices/player_html.js' %}"></script>
-        <script src="{% static 'js/devices/player.js' %}"
+        <script src="{% static 'js/devices/player_image.js' %}?v={{ cache_bust }}"></script>
+        <script src="{% static 'js/devices/player_video.js' %}?v={{ cache_bust }}"></script>
+        <script src="{% static 'js/devices/player_audio.js' %}?v={{ cache_bust }}"></script>
+        <script src="{% static 'js/devices/player_pdf.js' %}?v={{ cache_bust }}"></script>
+        <script src="{% static 'js/devices/player_html.js' %}?v={{ cache_bust }}"></script>
+        <script src="{% static 'js/devices/player.js' %}?v={{ cache_bust }}"
                 data-device-id="{{ device.id }}"
                 data-device-type="{{ device.device_type|default:'TV'|escapejs }}"
                 data-device-orientation="{{ device.orientation|default:'LANDSCAPE'|escapejs }}"

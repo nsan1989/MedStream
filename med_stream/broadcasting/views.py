@@ -258,6 +258,19 @@ def BroadcastView(request):
                                 opd_room__facility=user.facility
                             )
 
+                        opd_schedules = list(opd_schedules)
+
+                        if not opd_schedules:
+                            playback_form.add_error(
+                                None,
+                                (
+                                    "No OPD schedules found for today "
+                                    "after applying availability and "
+                                    "out-of-station filters."
+                                ),
+                            )
+                            continue
+
                         payload.update(
                             {
                                 "source_type": ("OPD_SCHEDULE"),
@@ -287,6 +300,7 @@ def BroadcastView(request):
                             for sched in opd_schedules:
                                 BroadcastSession.objects.create(
                                     device=device,
+                                    opdschedule=sched,
                                     layout=layout,
                                     started_at=timezone.now(),
                                     organization=user.organization,

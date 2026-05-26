@@ -25,10 +25,16 @@
       <div class="welcome-content">
         <h3>welcome</h3>
       </div>
-      <div class="dashboard-card">
-        <div class="card">
-
-        </div>
+      <div class="dashboard-card-grid">
+        <div class="metric-card"><h4>Facilities</h4><p>{{ total_facilities|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Devices</h4><p>{{ total_devices|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Doctors</h4><p>{{ total_doctors|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Online Devices</h4><p>{{ online_devices|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Today's OPD</h4><p>{{ today_opd_count|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Out Of Station</h4><p>{{ out_of_station_today|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Active Broadcasts</h4><p>{{ active_broadcasts|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Media Assets</h4><p>{{ media_assets|default:"0" }}</p></div>
+        <div class="metric-card"><h4>Playlists</h4><p>{{ playlists|default:"0" }}</p></div>
       </div>
     </div>
   </div>

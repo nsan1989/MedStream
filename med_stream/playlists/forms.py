@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from .models import Playlist, PlaylistItem
 from media_library.models import MediaAsset
 from schedules.models import OPDSchedule, DoctorSchedule
@@ -100,10 +101,23 @@ class PlaylistItemForm(forms.ModelForm):
         opd_qs = OPDSchedule.objects.none()
 
         if self.user and self.user.organization:
+            today = timezone.localdate()
+            current_day = today.weekday()
+
+            out_of_station_doctor_ids = DoctorSchedule.objects.filter(
+                doctor__organization=self.user.organization,
+                start_date__lte=today,
+                end_date__gte=today,
+                doctor__is_active=True,
+            ).values_list("doctor_id", flat=True)
+
             opd_qs = OPDSchedule.objects.filter(
                 doctor__organization=self.user.organization,
                 opd_room__organization=self.user.organization,
+                day_of_week=current_day,
+                is_available=True,
             ).select_related("doctor", "doctor__facility", "opd_room")
+            opd_qs = opd_qs.exclude(doctor_id__in=out_of_station_doctor_ids)
 
             if self.user.role == "STAFF":
                 opd_qs = opd_qs.filter(
@@ -111,9 +125,24 @@ class PlaylistItemForm(forms.ModelForm):
                     opd_room__facility=self.user.facility,
                 )
 
-        self.fields["opd_schedules"].queryset = opd_qs.order_by(
-            "day_of_week", "start_time"
-        )
+        # Combine schedules by day so multiple doctors on the same day
+        # appear as a single selectable OPD entry.
+        grouped_ids = []
+        seen_days = set()
+        for sched in opd_qs.order_by(
+            "day_of_week",
+            "start_time",
+            "id",
+        ):
+            day_key = sched.day_of_week
+            if day_key in seen_days:
+                continue
+            seen_days.add(day_key)
+            grouped_ids.append(sched.id)
+
+        self.fields["opd_schedules"].queryset = OPDSchedule.objects.filter(
+            id__in=grouped_ids
+        ).order_by("start_time", "opd_room__name", "doctor__name")
 
         # Doctor queryset
         doctor_qs = DoctorSchedule.objects.none()

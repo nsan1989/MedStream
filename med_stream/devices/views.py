@@ -10,10 +10,26 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 import json
-from .models import Device
+from datetime import timedelta
+from .models import Device, DeviceHealth
 from .models import DeviceLog
-from .enums import LogType
+from .enums import LogType, DeviceStatus
 from schedules.models import DoctorSchedule
+import logging
+
+
+logger = logging.getLogger(__name__)
+HEALTH_OFFLINE_TIMEOUT_SECONDS = 60
+
+
+def mark_device_online(device):
+    DeviceHealth.objects.update_or_create(
+        device=device,
+        defaults={
+            "status": DeviceStatus.ONLINE,
+            "last_seen_at": timezone.now(),
+        },
+    )
 
 
 # Add device form.
@@ -76,6 +92,24 @@ def DeviceListView(request):
             .order_by("name")
         )
 
+    # Refresh online/offline status based on recent last_seen_at.
+    offline_cutoff = timezone.now() - timedelta(seconds=HEALTH_OFFLINE_TIMEOUT_SECONDS)
+    for device in devices:
+        health, _ = DeviceHealth.objects.get_or_create(
+            device=device,
+            defaults={
+                "status": DeviceStatus.OFFLINE,
+                "last_seen_at": timezone.now() - timedelta(days=1),
+            },
+        )
+        if health.status not in [DeviceStatus.MAINTENANCE, DeviceStatus.DECOMMISSIONED]:
+            health.status = (
+                DeviceStatus.ONLINE
+                if health.last_seen_at and health.last_seen_at >= offline_cutoff
+                else DeviceStatus.OFFLINE
+            )
+            health.save(update_fields=["status", "updated_at"])
+
     context = {
         "devices": devices,
     }
@@ -129,15 +163,24 @@ def load_floors(request):
 @require_GET
 def DeviceNextCommand(request, device_id):
     device = get_object_or_404(Device, id=device_id, is_active=True)
+    mark_device_online(device)
 
-    # Optional simple check: caller IP should match the registered device IP.
-    remote_ip = request.META.get("REMOTE_ADDR")
-    if (
-        remote_ip
-        and remote_ip not in ["127.0.0.1", "::1"]
-        and remote_ip != device.ip_address
-    ):
-        return JsonResponse({"detail": "IP mismatch for device."}, status=403)
+    # IP validation for device command polling.
+    # Use forwarded-aware IP extraction so reverse proxy deployments work.
+    remote_ip = get_remote_ip(request)
+    registered_ip = (device.ip_address or "").strip()
+
+    if remote_ip and remote_ip not in ["127.0.0.1", "::1"]:
+        # Enforce strict match when a device IP is configured.
+        if registered_ip and remote_ip != registered_ip:
+            return JsonResponse(
+                {
+                    "detail": "IP mismatch for device.",
+                    "remote_ip": remote_ip,
+                    "registered_ip": registered_ip,
+                },
+                status=403,
+            )
 
     logs = DeviceLog.objects.filter(device=device, log_type=LogType.INFO).order_by(
         "-created_at"
@@ -153,12 +196,25 @@ def DeviceNextCommand(request, device_id):
     if not command_log:
         return JsonResponse({"command": None, "detail": "No pending play command."})
 
+    payload = command_log.metadata or {}
+    source_type = payload.get("source_type")
+    opd_schedules = payload.get("opd_schedules")
+    opd_count = len(opd_schedules) if isinstance(opd_schedules, list) else None
+
+    logger.info(
+        "DEVICE_CMD device_id=%s command_id=%s source_type=%s opd_count=%s",
+        device.id,
+        command_log.id,
+        source_type,
+        opd_count,
+    )
+
     return JsonResponse(
         {
             "command_id": str(command_log.id),
             "device_id": str(device.id),
             "device_name": device.name,
-            "payload": command_log.metadata or {},
+            "payload": payload,
             "created_at": command_log.created_at.isoformat(),
         }
     )
@@ -169,6 +225,7 @@ def DeviceNextCommand(request, device_id):
 @require_POST
 def DeviceCommandAck(request, device_id):
     device = get_object_or_404(Device, id=device_id, is_active=True)
+    mark_device_online(device)
 
     try:
         body = json.loads(request.body.decode("utf-8")) if request.body else {}
@@ -191,6 +248,21 @@ def DeviceCommandAck(request, device_id):
             "ack_at": timezone.now().isoformat(),
         },
     )
+
+    if command_id:
+        command_log = DeviceLog.objects.filter(
+            id=command_id,
+            device=device,
+            log_type=LogType.INFO,
+        ).first()
+
+        if command_log:
+            metadata = command_log.metadata or {}
+            metadata["executed"] = True
+            metadata["executed_at"] = timezone.now().isoformat()
+            metadata["last_ack_status"] = status
+            command_log.metadata = metadata
+            command_log.save(update_fields=["metadata", "updated_at"])
 
     return JsonResponse({"ok": True})
 
@@ -255,3 +327,4 @@ def DevicePlayerPage(request, device_id):
         ),
     }
     return render(request, "device/player.html", context)
+
