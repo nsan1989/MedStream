@@ -1,0 +1,75 @@
+{% extends "core/index.html" %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}
+  Broadcasts
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link
+    rel="preload"
+    href="{% static 'css/organization/all_org.css' %}"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'"
+  >
+  <noscript><link rel="stylesheet" href="{% static 'css/organization/all_org.css' %}"></noscript>
+{% endblock %}
+
+
+{% block app_content %}
+<div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{% url 'admin_dashboard' %}">
+              {% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small>
+            </a>
+          </li>
+          <li class="breadcrumb-item"><small>Organizations</small></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="org-content-wrapper">
+        <div class="org-header">
+            <h3>all organizations</h3>
+        </div>
+        <div class="org-content table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-danger">
+                    <tr>
+                        <th scope="col">name</th>
+                        <th scope="col">organization type</th>
+                        <th scope="col">email</th>
+                        <th scope="col">contact</th>
+                        <th scope="col">Address</th>
+                    </tr>
+                </thead>
+                <tbody class="table-info">
+                    {% if org %}
+                        {% for o in org %}
+                        <tr>
+                            <td>{{ o.name|default:"-" }}</td>
+                            <td>{{ o.organization_type|default:"-" }}</td>
+                            <td>{{ o.email|default:"-" }}</td>
+                            <td>{{ o.phone_number|default:"-" }}</td>
+                            <td>{{ o.address_line_1|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="100%">No organizations.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

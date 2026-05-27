@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from .models import MediaAsset
 from .forms import MediaAssetForm
+from audit_logs.models import AuditLog
 
 
 # Media list view.
@@ -65,7 +66,29 @@ def AddMedia(request):
         form = MediaAssetForm(request.POST, request.FILES, user=user)
 
         if form.is_valid():
-            form.save()
+            media_asset = form.save()
+            AuditLog.objects.create(
+                organization=user.organization,
+                user=user,
+                action="MEDIA_UPLOADED",
+                target_model="MediaAsset",
+                target_id=str(media_asset.id),
+                after_data={
+                    "title": media_asset.title,
+                    "media_type": media_asset.media_type,
+                    "facility_id": (
+                        str(media_asset.facility_id)
+                        if media_asset.facility_id
+                        else None
+                    ),
+                    "uploaded_by_id": (
+                        str(media_asset.uploaded_by_id)
+                        if media_asset.uploaded_by_id
+                        else None
+                    ),
+                },
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
             messages.success(request, "Media asset added successfully.")
             return redirect("media_list")
     else:

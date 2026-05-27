@@ -4,193 +4,57 @@ body {
     background: var(--primary-color);
 }
 
-.auth-container {
+.auth-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    padding: 2rem;
+    height: 100vh;
 }
 
-.auth-box {
-    position: relative;
+.row {
+    height: 100vh;
     width: 100%;
-    max-width: 850px;
-    min-height: 550px;
-    background-color: var(--secondary-color);
-    border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
-    display: flex;
+    padding: 0;
 }
 
-.auth-form-container {
-    width: 50%;
-    padding: 40px;
+/* Active form panels */
+.login-content,
+.register-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
-}
-
-#register-container {
-    display: none;
-}
-
-.auth-form-container h2 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 10px;
-}
-
-.auth-form-container p {
-    color: #666;
-    margin-bottom: 20px;
-}
-
-.input-group {
-    margin-bottom: 20px;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: #555;
-    font-weight: 500;
-}
-
-.input-group input,
-.input-group select {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-}
-
-.input-group input:focus,
-.input-group select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-}
-
-.auth-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
+    align-items: center;
+    padding: 2rem;
     background-color: var(--primary-color);
-    color: var(--secondary-color);
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s;
+    color:#fff
 }
 
-.auth-btn:hover {
-    background-color: #8a2a2e; /* A slightly darker shade of primary */
-}
-
-.auth-toggle-panel {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 50%;
-    height: 100%;
-    background: var(--primary-color);
-    color: var(--secondary-color);
+#left-content,
+#right-content {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    padding: 40px;
-    transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    z-index: 100;
 }
 
-#register-toggle {
-    display: none;
-}
-
-.toggle-content h3 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-}
-
-.toggle-btn {
-    padding: 10px 30px;
-    border: 2px solid var(--secondary-color);
-    border-radius: 50px;
-    background-color: transparent;
-    color: var(--secondary-color);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.toggle-btn:hover {
-    background-color: var(--secondary-color);
-    color: var(--primary-color);
-}
-
-/* JS-driven animations */
-.auth-box.show-register .auth-toggle-panel {
-    transform: translateX(-100%);
-}
-
-.auth-box.show-register #login-container {
-    display: none;
-}
-
-.auth-box.show-register #register-container {
+.login-info,
+.register-info {
+    color: #fff;
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center
 }
 
-.auth-box.show-register #login-toggle {
-    display: none;
-}
-
-.auth-box.show-register #register-toggle {
-    display: block;
-}
-
-.error-list {
-    color: var(--primary-color);
-    font-size: 0.8rem;
-    list-style: none;
-    padding: 5px 0 0;
-    margin: 0;
+#showAdminRegister:hover,
+#showStaffRegister:hover {
+    color: var(--tertiary-color);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .auth-box {
-        flex-direction: column;
-        max-width: 400px;
-        min-height: auto;
-    }
-
-    .auth-form-container {
-        width: 100%;
-        padding: 30px;
-    }
-
-    .auth-toggle-panel {
-        position: relative;
-        width: 100%;
-        left: 0;
-        height: auto;
-        padding: 30px;
-        transform: none !important;
-        border-radius: 0 0 20px 20px;
-    }
     
-    .auth-box.show-register .auth-toggle-panel {
-        border-radius: 20px 20px 0 0;
-        order: -1;
-    }
 }
 
 .hidden {

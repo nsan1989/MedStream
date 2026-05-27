@@ -1,0 +1,71 @@
+{% extends "core/index.html" %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}
+  Broadcasts
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link
+    rel="preload"
+    href="{% static 'css/organization/org_staff.css' %}"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'"
+  >
+  <noscript><link rel="stylesheet" href="{% static 'css/organization/org_staff.css' %}"></noscript>
+{% endblock %}
+
+
+{% block app_content %}
+<div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{% url 'admin_dashboard' %}">
+              {% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small>
+            </a>
+          </li>
+          <li class="breadcrumb-item"><small>Audit Logs</small></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="staff-content-wrapper">
+        <div class="staff-header">
+            <h3>organization staff</h3>
+        </div>
+        <div class="staff-content table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-danger">
+                    <tr>
+                        <th scope="col">staff</th>
+                        <th scope="col">role</th>
+                        <th scope="col">facility</th>
+                    </tr>
+                </thead>
+                <tbody class="table-info">
+                    {% if staff %}
+                        {% for s in staff %}
+                        <tr>
+                            <td>{{ s.member.phone_number }}</td>
+                            <td>{{ s.member.role }}</td>
+                            <td>{{ s.member.facility }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td>No staff.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

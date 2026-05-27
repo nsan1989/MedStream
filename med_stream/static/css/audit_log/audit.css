@@ -1,0 +1,19 @@
+.breadcrumb {
+    margin-bottom: 0;
+    background-color: var(--tertiary-color);
+    padding: 0.5rem;
+    border-radius: 0.2rem;
+    width: fit-content;
+}
+
+.breadcrumb-item {
+    color: var(--secondary-color);
+    width: fit-content;
+    display: flex;
+    align-items: center;
+}
+
+.audit-header h3 {
+    text-transform: uppercase;
+    font-weight: bold;
+}

@@ -1,7 +1,10 @@
 import logging
 import time
 
+from django.contrib import messages
+from django.contrib.auth import logout
 from django.db import connection
+from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
 
 
@@ -81,3 +84,30 @@ class RequestTimingMiddleware(MiddlewareMixin):
             response.add_post_render_callback(_log_template_render_time)
 
         return response
+
+
+class SubscriptionAccessMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            return None
+
+        organization = getattr(user, "organization", None)
+        if not organization:
+            return None
+
+        from organizations.models import OrganizationSubscription
+
+        is_allowed = OrganizationSubscription.enforce_for_organization(organization)
+        if is_allowed:
+            return None
+
+        logout(request)
+        messages.error(
+            request,
+            (
+                "Your organization's trial period has expired. "
+                "Please contact support to renew your subscription."
+            ),
+        )
+        return redirect("login")

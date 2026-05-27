@@ -143,6 +143,19 @@ def authView(request):
                 )
 
                 if login_user is not None:
+                    organization = getattr(login_user, "organization", None)
+                    if organization and not OrganizationSubscription.enforce_for_organization(
+                        organization
+                    ):
+                        messages.error(
+                            request,
+                            (
+                                "Your organization's trial period has expired. "
+                                "Please contact support to renew your subscription."
+                            ),
+                        )
+                        return redirect("login")
+
                     login(request, login_user)
 
                     messages.success(

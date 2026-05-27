@@ -10,12 +10,12 @@ MENU_ITEMS = {
         {
             "icon": "building",
             "menu_name": "Organizations",
-            "menu_link": "/organizations/",
+            "menu_link": "/organizations/all_org/",
         },
         {
-            "icon": "hospital",
-            "menu_name": "Facilities",
-            "menu_link": "/facilities/",
+            "icon": "box",
+            "menu_name": "Audit",
+            "menu_link": "/audits/audit_logs/",
         },
         {"icon": "wallet", "menu_name": "Revenue", "menu_link": "/revenue/"},
         {
@@ -48,12 +48,17 @@ MENU_ITEMS = {
         {
             "icon": "people",
             "menu_name": "Staff",
-            "menu_link": "/staff/",
+            "menu_link": "/organizations/org_staff/",
         },
         {
             "icon": "person",
             "menu_name": "Profile",
             "menu_link": "/profile/",
+        },
+        {
+            "icon": "box",
+            "menu_name": "Audit",
+            "menu_link": "/audits/audit_logs/",
         },
         {
             "icon": "gear",

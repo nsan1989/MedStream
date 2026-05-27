@@ -1,0 +1,79 @@
+{% extends "core/index.html" %}
+{% load bootstrap_icons %}
+{% load static %}
+
+{% block title %}
+  Broadcasts
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link
+    rel="preload"
+    href="{% static 'css/audit_log/audit.css' %}"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'"
+  >
+  <noscript><link rel="stylesheet" href="{% static 'css/audit_log/audit.css' %}"></noscript>
+{% endblock %}
+
+
+{% block app_content %}
+  <div class="container-fluid w-100">
+    <div class="breadcrumb-content mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{% url 'admin_dashboard' %}">
+              {% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small>
+            </a>
+          </li>
+          <li class="breadcrumb-item"><small>Audit Logs</small></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="audit-content-wrapper">
+      <div class="audit-header">
+        <h3>audit header</h3>
+      </div>
+      <div class="audit-content table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-danger">
+            <tr>
+              <th scope="col">user</th>
+              <th scope="col">action</th>
+              <th scope="col">target model</th>
+              <th scope="col">target id</th>
+              <th scope="col">before data</th>
+              <th scope="col">after data</th>
+              <th scope="col">ip address</th>
+            </tr>
+          </thead>
+          <tbody class="table-info">
+            {% if page_obj %}
+              {% for log in page_obj %}
+              <tr>
+                <td>{{ log.user|default:"-" }}</td>
+                <td>{{ log.action|default:"-" }}</td>
+                <td>{{ log.target_model|default:"-" }}</td>
+                <td>{{ log.target_id|default:"-" }}</td>
+                <td>{{ log.before_data|default:"-" }}</td>
+                <td>{{ log.after_data|default:"-" }}</td>
+                <td>{{ log.ip_address|default:"-" }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="100%">No audit logs found.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

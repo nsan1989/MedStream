@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import AuditLog
+from django.core.exceptions import PermissionDenied
 
 
 # Create your views here.
@@ -10,6 +11,12 @@ from .models import AuditLog
 def AuditLogsView(request):
 
     user = request.user
+
+    if user.role not in [
+        "SUPER_ADMIN",
+        "ADMIN",
+    ]:
+        raise PermissionDenied
 
     queryset = AuditLog.objects.select_related("user", "organization").order_by(
         "-created_at"

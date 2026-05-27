@@ -31,6 +31,8 @@ urlpatterns = [
     path("broadcasting/", include("broadcasting.urls")),
     path("media/", include("media_library.urls")),
     path("playlist/", include("playlists.urls")),
+    path("audits/", include("audit_logs.urls")),
+    path("organizations/", include("organizations.urls")),
     path("__reload__/", include("django_browser_reload.urls")),
 ]
 

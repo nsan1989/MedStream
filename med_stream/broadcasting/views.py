@@ -11,6 +11,7 @@ from playlists.models import PlaylistItem
 from schedules.models import Doctor, DoctorSchedule, OPDSchedule
 from django.utils import timezone
 from .enums import BroadcastStatus
+from audit_logs.models import AuditLog
 
 
 def _get_broadcast_layout(device, organization):
@@ -34,6 +35,22 @@ def _get_broadcast_layout(device, organization):
         .first()
     )
     return layout
+
+
+def _create_broadcast_audit_log(request, user, session, source_type):
+    AuditLog.objects.create(
+        organization=user.organization,
+        user=user,
+        action="BROADCAST_SESSION_INITIATED",
+        target_model="BroadcastSession",
+        target_id=str(session.id),
+        after_data={
+            "device_id": str(session.device_id) if session.device_id else None,
+            "facility_id": str(session.facility_id) if session.facility_id else None,
+            "source_type": source_type,
+        },
+        ip_address=request.META.get("REMOTE_ADDR"),
+    )
 
 
 # Broadcast view.
@@ -100,13 +117,19 @@ def BroadcastView(request):
                         }
                     )
                     try:
-                        BroadcastSession.objects.create(
+                        session = BroadcastSession.objects.create(
                             device=device,
                             media=media_asset,
                             layout=None,
                             started_at=timezone.now(),
                             organization=user.organization,
                             facility=device.facility,
+                        )
+                        _create_broadcast_audit_log(
+                            request=request,
+                            user=user,
+                            session=session,
+                            source_type="MEDIA_ASSET",
                         )
 
                     except ValidationError as exc:
@@ -207,13 +230,19 @@ def BroadcastView(request):
                         )
 
                         try:
-                            BroadcastSession.objects.create(
+                            session = BroadcastSession.objects.create(
                                 device=device,
                                 doctor_schedule=doctor_schedule,
                                 layout=layout,
                                 started_at=timezone.now(),
                                 organization=user.organization,
                                 facility=device.facility,
+                            )
+                            _create_broadcast_audit_log(
+                                request=request,
+                                user=user,
+                                session=session,
+                                source_type="DOCTOR_SCHEDULE",
                             )
                         except ValidationError as exc:
                             playback_form.add_error(
@@ -298,13 +327,19 @@ def BroadcastView(request):
 
                         try:
                             for sched in opd_schedules:
-                                BroadcastSession.objects.create(
+                                session = BroadcastSession.objects.create(
                                     device=device,
                                     opdschedule=sched,
                                     layout=layout,
                                     started_at=timezone.now(),
                                     organization=user.organization,
                                     facility=device.facility,
+                                )
+                                _create_broadcast_audit_log(
+                                    request=request,
+                                    user=user,
+                                    session=session,
+                                    source_type="OPD_SCHEDULE",
                                 )
 
                         except ValidationError as exc:

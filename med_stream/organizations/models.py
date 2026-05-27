@@ -229,14 +229,47 @@ class OrganizationSubscription(TimeStampedModel):
     def create_free_trial(cls, organization):
         trial_plan = SubscriptionPlan.objects.filter(billing_cycle="FREE_TRIAL").first()
         start_date = timezone.now().date()
-        end_date = start_date + timedelta(days=10)
+        trial_days = trial_plan.trial_days if trial_plan and trial_plan.trial_days else 10
+        end_date = start_date + timedelta(days=trial_days)
 
         return cls.objects.create(
             organization=organization,
             subscription_plan=trial_plan,
             start_date=start_date,
             end_date=end_date,
-            status="TRIAL",
+            status=SubscriptionStatus.TRIAL,
             is_trial=True,
             amount_paid=0,
         )
+
+    @classmethod
+    def enforce_for_organization(cls, organization):
+        if not organization:
+            return True
+
+        latest_subscription = cls.objects.filter(organization=organization).order_by(
+            "-created_at"
+        ).first()
+        if not latest_subscription:
+            return True
+
+        if latest_subscription.is_trial and latest_subscription.is_expired:
+            updates = []
+            if latest_subscription.status != SubscriptionStatus.INACTIVE:
+                latest_subscription.status = SubscriptionStatus.INACTIVE
+                updates.append("status")
+            if updates:
+                latest_subscription.save(update_fields=updates)
+
+            if organization.is_active:
+                organization.is_active = False
+                organization.save(update_fields=["is_active"])
+
+            CustomUser.objects.filter(
+                organization=organization,
+                is_active=True,
+            ).update(is_active=False)
+
+            return False
+
+        return True
