@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django import forms
+from django.utils.dateparse import parse_date
 from .models import Department, Doctor, OPDRoom, OPDSchedule, DoctorSchedule
 from facilities.models import Facility, Block, Floor
 from django.utils import timezone
@@ -228,6 +229,11 @@ class DoctorScheduleForm(forms.ModelForm):
 
 # Add OPD schedule form.
 class OPDScheduleForm(forms.ModelForm):
+    opd_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="OPD date",
+    )
     day_of_week = forms.MultipleChoiceField(
         choices=[
             (0, "Monday"),
@@ -240,12 +246,14 @@ class OPDScheduleForm(forms.ModelForm):
         ],
         widget=forms.CheckboxSelectMultiple,
         label="Day of week",
+        required=False,
     )
 
     class Meta:
         model = OPDSchedule
         fields = [
             "doctor",
+            "opd_date",
             "opd_room",
             "start_time",
             "end_time",
@@ -257,36 +265,40 @@ class OPDScheduleForm(forms.ModelForm):
         }
 
     def _get_selected_weekdays(self):
-        if self.data and "day_of_week" in self.data:
-            raw_values = self.data["day_of_week"]
+        if self.data and hasattr(self.data, "getlist"):
+            return [int(day) for day in self.data.getlist("day_of_week") if day]
 
-            if hasattr(raw_values, "getlist"):
-                values = raw_values.getlist("day_of_week")
-            elif isinstance(raw_values, (list, tuple)):
-                values = raw_values
-            else:
-                values = [raw_values]
+        raw_values = self.data.get("day_of_week") if self.data else None
+        if isinstance(raw_values, (list, tuple)):
+            return [int(day) for day in raw_values if day]
+        if raw_values:
+            return [int(raw_values)]
 
-            return [int(day) for day in values if day]
-
-        if self.instance and self.instance.pk:
+        if self.instance and self.instance.pk and self.instance.day_of_week is not None:
             return [self.instance.day_of_week]
 
         return []
+
+    def _get_selected_date(self):
+        raw_value = self.data.get("opd_date") if self.data else None
+        if raw_value:
+            return parse_date(raw_value)
+        if self.instance and self.instance.pk:
+            return self.instance.opd_date
+        return None
 
     def _get_next_occurrence_date(self, weekday):
         today = timezone.now().date()
         days_until = (weekday - today.weekday()) % 7
         return today + timedelta(days=days_until)
 
-    def _get_out_of_station_doctor_ids_for_weekdays(self, doctor_qs, weekdays):
-        if not weekdays:
+    def _get_out_of_station_doctor_ids_for_dates(self, doctor_qs, dates):
+        if not dates:
             return set()
 
         out_of_station_ids = set()
 
-        for weekday in weekdays:
-            target_date = self._get_next_occurrence_date(weekday)
+        for target_date in dates:
             out_of_station_ids.update(
                 DoctorSchedule.objects.filter(
                     doctor__in=doctor_qs,
@@ -297,7 +309,7 @@ class OPDScheduleForm(forms.ModelForm):
 
         return out_of_station_ids
 
-    def _get_unavailable_days_for_doctor(self, doctor, weekdays):
+    def _get_out_of_station_day_labels(self, doctor, weekdays):
         unavailable_days = []
 
         for weekday in weekdays:
@@ -321,7 +333,9 @@ class OPDScheduleForm(forms.ModelForm):
         self.fields["opd_room"].queryset = OPDRoom.objects.none()
 
         if self.instance and self.instance.pk:
-            self.fields["day_of_week"].initial = [self.instance.day_of_week]
+            if self.instance.day_of_week is not None:
+                self.fields["day_of_week"].initial = [self.instance.day_of_week]
+            self.fields["opd_date"].initial = self.instance.opd_date
 
         if self.user and self.user.organization:
             doctor_qs = Doctor.objects.filter(
@@ -332,12 +346,19 @@ class OPDScheduleForm(forms.ModelForm):
             if getattr(self.user, "facility", None):
                 doctor_qs = doctor_qs.filter(facility=self.user.facility)
 
-            selected_weekdays = set(self._get_selected_weekdays())
-            selected_weekdays.add(timezone.now().date().weekday())
-            out_of_station_ids = self._get_out_of_station_doctor_ids_for_weekdays(
-                doctor_qs,
-                selected_weekdays,
-            )
+            selected_date = self._get_selected_date()
+            if selected_date:
+                out_of_station_ids = self._get_out_of_station_doctor_ids_for_dates(
+                    doctor_qs,
+                    [selected_date],
+                )
+            else:
+                selected_weekdays = set(self._get_selected_weekdays())
+                out_of_station_ids = self._get_out_of_station_doctor_ids_for_dates(
+                    doctor_qs,
+                    [self._get_next_occurrence_date(weekday) for weekday in selected_weekdays],
+                )
+
             doctor_qs = doctor_qs.exclude(id__in=out_of_station_ids)
 
             self.fields["doctor"].queryset = doctor_qs
@@ -355,9 +376,11 @@ class OPDScheduleForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         doctor = cleaned_data.get("doctor")
+        opd_date = cleaned_data.get("opd_date")
         opd_room = cleaned_data.get("opd_room")
         start_time = cleaned_data.get("start_time")
         end_time = cleaned_data.get("end_time")
+        day_values = cleaned_data.get("day_of_week") or []
 
         if not self.user or not getattr(self.user, "organization", None):
             return cleaned_data
@@ -380,32 +403,50 @@ class OPDScheduleForm(forms.ModelForm):
         ):
             self.add_error("opd_room", "Selected OPD room is outside your facility.")
 
-        selected_weekdays = set(self._get_selected_weekdays())
-        selected_weekdays.add(timezone.now().date().weekday())
+        if not opd_date and not day_values:
+            self.add_error("opd_date", "Select an OPD date or at least one weekday.")
 
-        if doctor and selected_weekdays:
-            unavailable_days = self._get_unavailable_days_for_doctor(
-                doctor,
-                selected_weekdays,
-            )
-
-            if unavailable_days:
-                day_labels = [
-                    label
-                    for value, label in self.fields["day_of_week"].choices
-                    if int(value) in unavailable_days
-                ]
+        if opd_date and day_values:
+            selected_days = [int(day) for day in day_values]
+            if opd_date.weekday() not in selected_days:
                 self.add_error(
                     "day_of_week",
-                    (
-                        "Selected doctor is out of station for: "
-                        f"{', '.join(day_labels)}."
-                    ),
+                    "When an OPD date is selected, its weekday must also be selected.",
                 )
 
-        day_values = cleaned_data.get("day_of_week")
+        if doctor:
+            if opd_date:
+                unavailable_days = self._get_out_of_station_doctor_ids_for_dates(
+                    Doctor.objects.filter(pk=doctor.pk),
+                    [opd_date],
+                )
+                if unavailable_days:
+                    self.add_error(
+                        "doctor",
+                        "Selected doctor is out of station on the selected date.",
+                    )
+            else:
+                selected_weekdays = set(self._get_selected_weekdays())
+                if selected_weekdays:
+                    unavailable_days = self._get_out_of_station_day_labels(
+                        doctor,
+                        selected_weekdays,
+                    )
+                    if unavailable_days:
+                        day_labels = [
+                            label
+                            for value, label in self.fields["day_of_week"].choices
+                            if int(value) in unavailable_days
+                        ]
+                        self.add_error(
+                            "day_of_week",
+                            (
+                                "Selected doctor is out of station for: "
+                                f"{', '.join(day_labels)}."
+                            ),
+                        )
 
-        if day_values:
+        if day_values and not opd_date:
             selected_days = [int(day) for day in day_values]
 
             if self.instance.pk and len(selected_days) > 1:
@@ -437,12 +478,32 @@ class OPDScheduleForm(forms.ModelForm):
 
     def save(self, commit=True):
         if self.instance.pk:
+            self.instance.opd_date = self.cleaned_data.get("opd_date")
             day_values = self.cleaned_data.get("day_of_week")
-            if day_values:
+            if self.instance.opd_date:
+                self.instance.day_of_week = self.instance.opd_date.weekday()
+            elif day_values:
                 self.instance.day_of_week = int(day_values[0])
             return super().save(commit=commit)
 
         created_schedules = []
+        opd_date = self.cleaned_data.get("opd_date")
+
+        if opd_date:
+            schedule = self.Meta.model(
+                doctor=self.cleaned_data["doctor"],
+                opd_date=opd_date,
+                opd_room=self.cleaned_data["opd_room"],
+                day_of_week=opd_date.weekday(),
+                start_time=self.cleaned_data["start_time"],
+                end_time=self.cleaned_data["end_time"],
+                is_available=self.cleaned_data["is_available"],
+            )
+            if commit:
+                schedule.save()
+            created_schedules.append(schedule)
+            return created_schedules
+
         for day in [int(day) for day in self.cleaned_data.get("day_of_week", [])]:
             schedule = self.Meta.model(
                 doctor=self.cleaned_data["doctor"],

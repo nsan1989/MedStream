@@ -1,10 +1,10 @@
 
 .app-sidebar {
     background-color: var(--primary-color);
-    height: 100vh;
     display: flex;
+    height: 100vh;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
     width: 220px;
     transition: width 0.3s ease;
 }

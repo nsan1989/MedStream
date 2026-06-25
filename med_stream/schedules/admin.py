@@ -107,6 +107,7 @@ class OPDScheduleResource(resources.ModelResource):
         fields = (
             "id",
             "doctor",
+            "opd_date",
             "opd_room",
             "day_of_week",
             "start_time",
@@ -122,15 +123,16 @@ class OPDScheduleAdmin(ImportExportModelAdmin):
     resource_class = OPDScheduleResource
     list_display = (
         "doctor",
+        "opd_date",
         "opd_room",
         "day_of_week",
         "start_time",
         "end_time",
         "is_available",
     )
-    list_filter = ("day_of_week", "is_available", "created_at")
+    list_filter = ("opd_date", "day_of_week", "is_available", "created_at")
     search_fields = ("doctor__name", "opd_room__name")
-    ordering = ("day_of_week", "start_time")
+    ordering = ("opd_date", "day_of_week", "start_time")
     list_select_related = ("doctor", "opd_room")
 
 

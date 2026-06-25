@@ -239,6 +239,9 @@ async function renderSchedule(commandId, payload) {
                 schedules.map(item => ({
                     Schedule:
                         "OPD Schedule",
+                    Date:
+                        item.opd_date ||
+                        "Recurring",
                     Doctor:
                         item.doctor ||
                         "Unknown doctor",

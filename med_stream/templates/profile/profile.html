@@ -1,0 +1,30 @@
+{% extends "core/index.html" %}
+{% load static %}
+{% load bootstrap_icons %}
+
+{% block title %}
+  Profile
+{% endblock %}
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="preload" href="{% static 'css/profile/profile.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/profile/profile.css' %}"></noscript>
+{% endblock %}
+
+{% block app_content %}
+<div class="profile-wrapper">
+    <div class="breadcrumb-content">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Dashboard</small></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="profile-content">
+        <div class="welcome-content">
+            <h3>welcome</h3>
+        </div>
+    </div>
+</div>
+{% endblock %}

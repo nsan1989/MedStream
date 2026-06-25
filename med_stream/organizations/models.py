@@ -219,7 +219,10 @@ class OrganizationSubscription(TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.organization.name} - {self.subscription_plan.name}"
+        return (
+            f"{self.organization.name if self.organization else 'No Organization'} - "
+            f"{self.subscription_plan.name if self.subscription_plan else 'No Subscription'}"
+        )
 
     @property
     def is_expired(self):
@@ -229,7 +232,9 @@ class OrganizationSubscription(TimeStampedModel):
     def create_free_trial(cls, organization):
         trial_plan = SubscriptionPlan.objects.filter(billing_cycle="FREE_TRIAL").first()
         start_date = timezone.now().date()
-        trial_days = trial_plan.trial_days if trial_plan and trial_plan.trial_days else 10
+        trial_days = (
+            trial_plan.trial_days if trial_plan and trial_plan.trial_days else 10
+        )
         end_date = start_date + timedelta(days=trial_days)
 
         return cls.objects.create(
@@ -247,9 +252,11 @@ class OrganizationSubscription(TimeStampedModel):
         if not organization:
             return True
 
-        latest_subscription = cls.objects.filter(organization=organization).order_by(
-            "-created_at"
-        ).first()
+        latest_subscription = (
+            cls.objects.filter(organization=organization)
+            .order_by("-created_at")
+            .first()
+        )
         if not latest_subscription:
             return True
 

@@ -80,6 +80,8 @@
 
                     {{ item.opdschedule.opd_room.name|default:"-" }}<br>
 
+                    {{ item.opdschedule.opd_date|date:"d M Y"|default:"Recurring" }}<br>
+
                     {{ item.opdschedule.get_day_of_week_display }}<br>
 
                     {{ item.opdschedule.start_time }}

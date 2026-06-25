@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.test import TestCase
 from django.utils import timezone
@@ -7,7 +7,8 @@ from accounts.models import CustomUser
 from facilities.models import Facility
 from organizations.models import Organization
 from schedules.forms import OPDScheduleForm
-from schedules.models import Doctor, DoctorSchedule, OPDRoom
+from schedules.models import Doctor, DoctorSchedule, OPDRoom, OPDSchedule
+from django.urls import reverse
 
 
 class OPDScheduleFormAvailabilityTests(TestCase):
@@ -95,3 +96,125 @@ class OPDScheduleFormAvailabilityTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("doctor", form.errors)
+
+
+class SchedulesViewTests(TestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(
+            name="Test Organization",
+            slug="test-organization",
+            registration_number="REG-002",
+            email="org2@example.com",
+            phone_number="9000000004",
+        )
+        self.facility = Facility.objects.create(
+            name="Secondary Facility",
+            organization=self.organization,
+            phone_number="9000000005",
+        )
+        self.user = CustomUser.objects.create_user(
+            phone_number="9000000006",
+            password="password123",
+            organization=self.organization,
+            role="ADMIN",
+        )
+        self.doctor = Doctor.objects.create(
+            name="Dr. Past",
+            organization=self.organization,
+            facility=self.facility,
+        )
+
+    def test_schedules_view_excludes_past_doctor_schedules(self):
+        today = timezone.localdate()
+        DoctorSchedule.objects.create(
+            doctor=self.doctor,
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+            reason="Finished leave",
+        )
+        active_schedule = DoctorSchedule.objects.create(
+            doctor=self.doctor,
+            start_date=today,
+            end_date=today + timedelta(days=3),
+            reason="Current leave",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("schedules"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerySetEqual(
+            response.context["doctor_schedules"],
+            [active_schedule],
+            transform=lambda item: item,
+        )
+
+    def test_schedules_view_excludes_past_opd_schedules(self):
+        today = timezone.localdate()
+        current_time = timezone.localtime().time()
+        current_dt = datetime.combine(today, current_time)
+        past_end_time = (current_dt - timedelta(minutes=1)).time()
+        future_end_time = (current_dt + timedelta(minutes=1)).time()
+        start_time = (current_dt - timedelta(hours=1)).time()
+
+        past_schedule = OPDSchedule.objects.create(
+            doctor=self.doctor,
+            opd_room=OPDRoom.objects.create(
+                name="Room Past",
+                organization=self.organization,
+                facility=self.facility,
+            ),
+            day_of_week=today.weekday(),
+            start_time=start_time,
+            end_time=past_end_time,
+            is_available=True,
+        )
+        active_schedule = OPDSchedule.objects.create(
+            doctor=self.doctor,
+            opd_room=OPDRoom.objects.create(
+                name="Room Active",
+                organization=self.organization,
+                facility=self.facility,
+            ),
+            day_of_week=today.weekday(),
+            start_time=start_time,
+            end_time=future_end_time,
+            is_available=True,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("schedules"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerySetEqual(
+            response.context["opd_schedules"],
+            [active_schedule],
+            transform=lambda item: item,
+        )
+
+    def test_schedules_view_includes_date_based_opd_schedule(self):
+        today = timezone.localdate()
+
+        dated_schedule = OPDSchedule.objects.create(
+            doctor=self.doctor,
+            opd_date=today,
+            opd_room=OPDRoom.objects.create(
+                name="Room Date",
+                organization=self.organization,
+                facility=self.facility,
+            ),
+            start_time=(timezone.localtime() - timedelta(hours=1)).time(),
+            end_time=(timezone.localtime() + timedelta(hours=1)).time(),
+            is_available=True,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("schedules"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, today.strftime("%d %b %Y"))
+        self.assertQuerySetEqual(
+            response.context["opd_schedules"],
+            [dated_schedule],
+            transform=lambda item: item,
+        )

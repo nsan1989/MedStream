@@ -144,8 +144,11 @@ def authView(request):
 
                 if login_user is not None:
                     organization = getattr(login_user, "organization", None)
-                    if organization and not OrganizationSubscription.enforce_for_organization(
+                    if (
                         organization
+                        and not OrganizationSubscription.enforce_for_organization(
+                            organization
+                        )
                     ):
                         messages.error(
                             request,
@@ -335,3 +338,9 @@ def resendOTPView(request):
     )
 
     return redirect("register")
+
+
+# Profile view.
+def profileView(request):
+    context = {}
+    return render(request, "profile/profile.html", context)

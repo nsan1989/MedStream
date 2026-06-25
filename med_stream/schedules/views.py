@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Q
 from .forms import (
     DepartmentForm,
     DoctorForm,
@@ -17,8 +18,6 @@ from .models import (
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.utils import timezone
-
-today = timezone.now().date()
 
 
 # Add department view.
@@ -198,6 +197,8 @@ def DoctorSchedule(request):
 @login_required
 def SchedulesView(request):
     user = request.user
+    today = timezone.localdate()
+    current_time = timezone.localtime().time()
 
     if user.role not in [
         "ADMIN",
@@ -222,8 +223,16 @@ def SchedulesView(request):
             OPDSchedule.objects.filter(
                 doctor__organization=user.organization,
                 opd_room__organization=user.organization,
-                day_of_week=today.weekday(),
                 is_available=True,
+            )
+            .filter(
+                Q(opd_date=today, end_time__gte=current_time)
+                | Q(opd_date__gt=today)
+                | Q(
+                    opd_date__isnull=True,
+                    day_of_week=today.weekday(),
+                    end_time__gte=current_time,
+                )
             )
             .select_related(
                 "doctor",
@@ -237,6 +246,7 @@ def SchedulesView(request):
         doctor_schedules = (
             DoctorScheduleModel.objects.filter(
                 doctor__organization=user.organization,
+                end_date__gte=today,
             )
             .select_related(
                 "doctor",
@@ -261,8 +271,16 @@ def SchedulesView(request):
                 doctor__organization=user.organization,
                 doctor__facility=user.facility,
                 opd_room__facility=user.facility,
-                day_of_week=today.weekday(),
                 is_available=True,
+            )
+            .filter(
+                Q(opd_date=today, end_time__gte=current_time)
+                | Q(opd_date__gt=today)
+                | Q(
+                    opd_date__isnull=True,
+                    day_of_week=today.weekday(),
+                    end_time__gte=current_time,
+                )
             )
             .select_related(
                 "doctor",
@@ -277,6 +295,7 @@ def SchedulesView(request):
             DoctorScheduleModel.objects.filter(
                 doctor__organization=user.organization,
                 doctor__facility=user.facility,
+                end_date__gte=today,
             )
             .select_related(
                 "doctor",

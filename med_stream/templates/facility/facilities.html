@@ -1,0 +1,58 @@
+{% extends "core/index.html" %}
+{% load crispy_forms_tags %}
+{% load bootstrap_icons %}
+{% load static %}
+
+
+{% block title %}
+  Facilities
+{% endblock %}
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="preload" href="{% static 'css/facility/facilities.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/facility/facilities.css' %}"></noscript>
+{% endblock %}
+
+
+{% block app_content %}
+<div class="facilities-wrapper">
+  <div class="breadcrumb-content">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item active" aria-current="page">{% bs_icon 'house' size='1em' %}&nbsp;<small>Facilities</small></li>
+      </ol>
+    </nav>
+  </div>
+  <div class="facilities-content">
+    <div class="facilities-header">
+      <h3>facilities</h3>
+    </div>
+    <div class="facilities-list table-responsive">
+      <table class="table table-bordered">
+        <thead class="table-danger">
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">No. of Staff</th>
+          </tr>
+        </thead>
+        <tbody class="table-info">
+          {% if facilities %}
+            {% for f in facilities %}
+              <tr>
+                <td>{{f.name}}</td>
+                <td>{{f.facility_staff.count|default:"0"}}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="100%">No facility have been added yet.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

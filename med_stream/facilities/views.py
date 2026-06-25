@@ -142,3 +142,11 @@ def FloorList(request):
     context = {"floors": floor_list}
 
     return render(request, "facility/floor_list.html", context)
+
+
+# Facility list view.
+def FacilityList(request):
+    user = request.user
+    facility_list = Facility.objects.filter(organization=user.organization)
+    context = {"facilities": facility_list}
+    return render(request, "facility/facilities.html", context)

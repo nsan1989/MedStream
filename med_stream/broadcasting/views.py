@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Q
 from .models import BroadcastSession
 from .forms import DevicePlaybackForm
 from devices.models import DeviceLog, Device
@@ -268,8 +269,14 @@ def BroadcastView(request):
                         opd_schedules = (
                             OPDSchedule.objects.filter(
                                 doctor__organization=user.organization,
-                                day_of_week=current_day,
                                 is_available=True,
+                            )
+                            .filter(
+                                Q(opd_date=today)
+                                | Q(
+                                    opd_date__isnull=True,
+                                    day_of_week=current_day,
+                                )
                             )
                             .exclude(doctor_id__in=out_of_station_doctor_ids)
                             .select_related(
@@ -315,6 +322,11 @@ def BroadcastView(request):
                                                 None,
                                             )
                                             else "-"
+                                        ),
+                                        "opd_date": (
+                                            sched.opd_date.isoformat()
+                                            if sched.opd_date
+                                            else ""
                                         ),
                                         "day": (sched.get_day_of_week_display()),
                                         "start_time": (sched.start_time.isoformat()),

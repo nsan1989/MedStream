@@ -13,13 +13,12 @@
     align-items: center;
 }
 
-.breadcrumb-item a {
-    text-decoration: none;
-    color: var(--secondary-color);
+.profile-content {
+    margin-top: 0.75rem;
 }
 
-.audit-header h3 {
+.welcome-content h3 {
     text-transform: uppercase;
     font-weight: bold;
-    color: var(--primary-color)
+    color: var(--primary-color);
 }

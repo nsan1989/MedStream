@@ -21,7 +21,7 @@ MENU_ITEMS = {
         {
             "icon": "person",
             "menu_name": "Profile",
-            "menu_link": "/profile/",
+            "menu_link": "/accounts/profile/",
         },
         {
             "icon": "gear",
@@ -38,7 +38,7 @@ MENU_ITEMS = {
         {
             "icon": "hospital",
             "menu_name": "Facilities",
-            "menu_link": "/facilities/",
+            "menu_link": "/facility/facilities/",
         },
         {
             "icon": "display",
@@ -53,7 +53,7 @@ MENU_ITEMS = {
         {
             "icon": "person",
             "menu_name": "Profile",
-            "menu_link": "/profile/",
+            "menu_link": "/accounts/profile/",
         },
         {
             "icon": "box",
@@ -118,7 +118,7 @@ MENU_ITEMS = {
         {
             "icon": "person",
             "menu_name": "Profile",
-            "menu_link": "/profile/",
+            "menu_link": "/accounts/profile/",
         },
         {
             "icon": "gear",

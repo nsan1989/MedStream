@@ -1,7 +1,7 @@
 import uuid
 
-
 from django.db import models
+from django.utils import timezone
 from core.models import TimeStampedModel
 from facilities.models import Facility, Block, Floor
 from .enums import DeviceType, DeviceStatus, OrientationChoices, LogType
@@ -68,7 +68,7 @@ class DeviceHealth(TimeStampedModel):
     status = models.CharField(
         max_length=20, choices=DeviceStatus.choices, default=DeviceStatus.ONLINE
     )
-    last_seen_at = models.DateTimeField(auto_now=True)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
     cpu_usage = models.FloatField(default=0.0)
     memory_usage = models.FloatField(default=0.0)
     disk_usage = models.FloatField(default=0.0)

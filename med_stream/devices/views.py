@@ -17,7 +17,6 @@ from .enums import LogType, DeviceStatus
 from schedules.models import DoctorSchedule
 import logging
 
-
 logger = logging.getLogger(__name__)
 HEALTH_OFFLINE_TIMEOUT_SECONDS = 60
 
@@ -109,6 +108,7 @@ def DeviceListView(request):
                 else DeviceStatus.OFFLINE
             )
             health.save(update_fields=["status", "updated_at"])
+        device.health = health
 
     context = {
         "devices": devices,
@@ -327,4 +327,3 @@ def DevicePlayerPage(request, device_id):
         ),
     }
     return render(request, "device/player.html", context)
-
