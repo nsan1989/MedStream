@@ -9,8 +9,8 @@ MENU_ITEMS = {
         },
         {
             "icon": "building",
-            "menu_name": "Organizations",
-            "menu_link": "/organizations/all_org/",
+            "menu_name": "Facilities",
+            "menu_link": "/facility/facilities/",
         },
         {
             "icon": "box",

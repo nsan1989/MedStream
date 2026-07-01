@@ -92,6 +92,7 @@ class StaffRegisterForm(forms.Form):
     )
     phone_number = forms.CharField(max_length=15, required=True)
     password = forms.CharField(widget=forms.PasswordInput, required=True)
+    role = forms.ChoiceField(choices=UserRole.choices, required=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -100,6 +101,7 @@ class StaffRegisterForm(forms.Form):
             "organization",
             "phone_number",
             "password",
+            "role",
         ]:
             self.fields[fieldname].help_text = None
 

@@ -12,6 +12,7 @@ class CustomUserAdmin(UserAdmin):
         "phone_number",
         "is_staff",
         "is_active",
+        "is_superuser",
     )
 
     ordering = ("id",)

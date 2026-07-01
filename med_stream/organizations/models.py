@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
 from django.utils.text import slugify
-from .enums import OrganizationType, SubscriptionStatus
+from .enums import OrganizationType, SubscriptionStatus, OrganizationRole
 from subscriptions.models import SubscriptionPlan
 from core.models import TimeStampedModel
 from accounts.models import CustomUser
@@ -16,6 +16,11 @@ from accounts.models import CustomUser
 class Organization(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
+    role = models.CharField(
+        max_length=20,
+        choices=OrganizationRole.choices,
+        default=OrganizationRole.SUPER_ADMIN,
+    )
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     organization_type = models.CharField(
         max_length=50,

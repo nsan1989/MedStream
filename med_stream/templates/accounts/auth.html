@@ -75,7 +75,7 @@
                             <div id="adminRegisterForm">
                                 <form action="{% url 'register' %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="action" value="register">
+                                    <input type="hidden" name="action" value="admin_register">
                                     <div class="mb-3">
                                         <label for="organization_name" class="form-label">Organization Name</label>
                                         <input type="text" class="form-control" id="organization_name" name="organization_name" aria-describedby="organizationNameHelp">
@@ -92,7 +92,7 @@
                                         <label for="register_phone_number" class="form-label">Phone Number</label>
                                         <input type="text" class="form-control" id="register_phone_number" name="phone_number" aria-describedby="registerPhoneHelp">
                                     </div>
-                                    <!-- Send OTP -->
+                                    <!--
                                     <div class="mb-3">
                                         <button
                                             type="button"
@@ -102,7 +102,6 @@
                                             Send OTP
                                         </button>
                                     </div>
-                                    <!-- OTP Section (Hidden Initially) -->
                                     <div
                                         id="adminOtpSection"
                                         style="display: none;"
@@ -132,13 +131,13 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <!-- Hidden Field -->
                                     <input
                                         type="hidden"
                                         name="otp_verified"
                                         id="adminOtpVerified"
                                         value="false"
                                     >
+                                    -->
                                     <div class="mb-3">
                                         <label for="register_password" class="form-label">Password</label>
                                         <input type="password" class="form-control" id="register_password" name="password">
@@ -200,7 +199,30 @@
                                         >
                                     </div>
 
-                                    <!-- Send OTP -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="staff_role"
+                                            class="form-label"
+                                        >
+                                            Role
+                                        </label>
+
+                                        <select
+                                            class="form-select"
+                                            id="staff_role"
+                                            name="role"
+                                        >
+                                            <option value="">Select Role</option>
+
+                                            {% for value, label in roles %}
+                                                <option value="{{ value }}">
+                                                    {{ label }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!--
                                     <div class="mb-3">
                                         <button
                                             type="button"
@@ -211,7 +233,6 @@
                                         </button>
                                     </div>
 
-                                    <!-- OTP Section (Hidden Initially) -->
                                     <div
                                         id="adminOtpSection"
                                         style="display: none;"
@@ -243,7 +264,7 @@
                                             </button>
                                         </div>
                                     </div>
-
+                                -->
                                     <!-- Hidden Field -->
                                     <input
                                         type="hidden"

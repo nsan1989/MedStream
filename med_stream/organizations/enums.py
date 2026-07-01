@@ -1,6 +1,10 @@
 from django.db import models
 
 
+class OrganizationRole(models.TextChoices):
+    SUPER_ADMIN = "SUPER_ADMIN", "Super Admin"
+
+
 class OrganizationType(models.TextChoices):
     HOSPITAL = "HOSPITAL", "Hospital"
     CLINIC = "CLINIC", "Clinic"

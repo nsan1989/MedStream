@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from .enums import UserRole
 
 
 from .forms import RegisterForm, LoginForm, StaffRegisterForm
@@ -25,10 +26,16 @@ def authView(request):
 
     organizations = Organization.objects.filter(is_active=True)
 
+    roles = [
+        choice
+        for choice in UserRole.choices
+        if choice[0] in [UserRole.ADMIN, UserRole.STAFF]
+    ]
+
     if request.method == "POST":
         action = request.POST.get("action")
 
-        # Admin Register.
+        # Super Admin Register.
         if action == "admin_register":
             register_form = RegisterForm(request.POST)
 
@@ -36,43 +43,31 @@ def authView(request):
 
                 phone_number = register_form.cleaned_data["phone_number"]
 
-                otp = generate_otp()
-
                 try:
-                    send_otp(
-                        phone_number,
-                        otp,
-                    )
-                    PhoneOTP.objects.update_or_create(
-                        phone_number=phone_number,
-                        defaults={
-                            "otp": otp,
-                        },
-                    )
-                    request.session["pending_registration"] = {
-                        "registration_type": "admin",
-                        "organization_name": register_form.cleaned_data[
-                            "organization_name"
-                        ],
-                        "organization_type": register_form.cleaned_data[
+                    organization = Organization.objects.create(
+                        name=register_form.cleaned_data["organization_name"],
+                        role=UserRole.SUPER_ADMIN,
+                        organization_type=register_form.cleaned_data[
                             "organization_type"
                         ],
-                        "phone_number": phone_number,
-                        "password": register_form.cleaned_data["password"],
-                    }
+                        phone_number=register_form.cleaned_data["phone_number"],
+                    )
+
+                    user = CustomUser.objects.create_user(
+                        phone_number=phone_number,
+                        password=register_form.cleaned_data["password"],
+                        role=UserRole.SUPER_ADMIN,
+                        organization=organization,
+                    )
 
                     messages.success(
                         request,
-                        "OTP sent successfully " "to your phone number.",
+                        "Organization created successfully.",
                     )
+                    return redirect("login")
 
-                    return redirect("verify_otp")
-
-                except Exception:
-                    messages.error(
-                        request,
-                        "Unable to send OTP. " "Please try again.",
-                    )
+                except Exception as e:
+                    messages.error(request, f"Registration failed: {str(e)}")
 
             messages.error(
                 request,
@@ -86,42 +81,35 @@ def authView(request):
             if staff_form.is_valid():
                 phone_number = staff_form.cleaned_data["phone_number"]
 
-                otp = generate_otp()
-
                 try:
-                    send_otp(
-                        phone_number,
-                        otp,
-                    )
-
-                    PhoneOTP.objects.update_or_create(
-                        phone_number=phone_number,
-                        defaults={
-                            "otp": otp,
-                        },
-                    )
-
                     organization = staff_form.cleaned_data["organization"]
 
-                    request.session["pending_registration"] = {
-                        "registration_type": "staff",
-                        "organization_id": str(organization.id),
-                        "phone_number": phone_number,
-                        "password": staff_form.cleaned_data["password"],
-                    }
+                    member = OrganizationMember.objects.create(
+                        organization=organization,
+                        member=CustomUser.objects.create_user(
+                            phone_number=phone_number,
+                            password=staff_form.cleaned_data["password"],
+                            role=staff_form.cleaned_data["role"],
+                            organization=organization,
+                        ),
+                        is_active=True,
+                    )
+
+                    user = CustomUser.objects.create_user(
+                        phone_number=phone_number,
+                        password=staff_form.cleaned_data["password"],
+                        role=staff_form.cleaned_data["role"],
+                        organization=organization,
+                    )
 
                     messages.success(
                         request,
-                        "OTP sent successfully " "to your phone number.",
+                        "Staff registered successfully.",
                     )
+                    return redirect("login")
 
-                    return redirect("verify_otp")
-
-                except Exception:
-                    messages.error(
-                        request,
-                        "Unable to send OTP. " "Please try again.",
-                    )
+                except Exception as e:
+                    messages.error(request, f"Registration failed: {str(e)}")
 
             messages.error(
                 request,
@@ -191,6 +179,7 @@ def authView(request):
         "staff_form": staff_form,
         "login_form": login_form,
         "organizations": organizations,
+        "roles": roles,
     }
 
     return render(request, "accounts/auth.html", context)
