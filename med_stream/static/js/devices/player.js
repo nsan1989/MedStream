@@ -1,13 +1,19 @@
-const { deviceId, deviceType, deviceOrientation } = document.currentScript.dataset;
+const {
+    deviceId,
+    deviceType,
+    deviceOrientation,
+    offDutyText = ""
+} = document.currentScript.dataset;
 
 let lastCommandId = null;
 let playlistTimer = null;
+let contentSlideTimer = null;
+let contentSlides = [];
+let contentSlideIndex = 0;
 
 const statusNode = document.getElementById("player-status");
-const stageNode = document.getElementById("player-stage");
-const headerDeviceInfo = document.getElementById("player-device-info");
-const headerMarquee = document.getElementById("player-marquee");
-const headerMarqueeText = document.getElementById("player-marquee-text");
+const stageNode = document.getElementById("media-pane");
+const contentPane = document.getElementById("content-pane");
 
 const deviceTypeClass = `device-${deviceType.toLowerCase().replace(/_/g, "-")}`;
 document.body.classList.add(deviceTypeClass);
@@ -33,6 +39,166 @@ function applyDeviceSettings() {
 }
 
 applyDeviceSettings();
+
+function clearContentPane() {
+    if (contentSlideTimer) {
+        clearInterval(contentSlideTimer);
+        contentSlideTimer = null;
+    }
+    contentPane.innerHTML = "";
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function splitTextIntoSlides(text, maxChars = 220) {
+    const cleaned = String(text || "").replace(/\r/g, "").trim();
+    if (!cleaned) {
+        return ["No content available."];
+    }
+
+    const paragraphs = cleaned
+        .split(/\n+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    if (paragraphs.length > 1) {
+        return paragraphs;
+    }
+
+    if (cleaned.length <= maxChars) {
+        return [cleaned];
+    }
+
+    const chunks = [];
+    for (let index = 0; index < cleaned.length; index += maxChars) {
+        chunks.push(cleaned.slice(index, index + maxChars));
+    }
+    return chunks;
+}
+
+function renderContentSlides(slides, title = "Content", subtitle = "") {
+    clearContentPane();
+
+    const normalizedSlides = (slides || [])
+        .map((slide) => String(slide ?? "").trim())
+        .filter(Boolean);
+
+    if (!normalizedSlides.length) {
+        const placeholder = document.createElement("div");
+        placeholder.className = "content-slide";
+        const titleEl = document.createElement("div");
+        titleEl.className = "content-title";
+        titleEl.textContent = title;
+        const bodyEl = document.createElement("div");
+        bodyEl.className = "content-body";
+        bodyEl.textContent = "No content available.";
+        placeholder.appendChild(titleEl);
+        placeholder.appendChild(bodyEl);
+        contentPane.appendChild(placeholder);
+        return;
+    }
+
+    contentSlides = normalizedSlides;
+    contentSlideIndex = 0;
+
+    function renderCurrentSlide() {
+        const slide = document.createElement("div");
+        slide.className = "content-slide";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "content-title";
+        titleEl.textContent = title;
+
+        const bodyEl = document.createElement("div");
+        bodyEl.className = "content-body";
+        bodyEl.textContent = contentSlides[contentSlideIndex] || "";
+
+        slide.appendChild(titleEl);
+        slide.appendChild(bodyEl);
+
+        if (subtitle) {
+            const metaEl = document.createElement("div");
+            metaEl.className = "content-meta";
+            metaEl.textContent = subtitle;
+            slide.appendChild(metaEl);
+        }
+
+        contentPane.innerHTML = "";
+        contentPane.appendChild(slide);
+    }
+
+    renderCurrentSlide();
+
+    if (contentSlides.length > 1) {
+        contentSlideTimer = setInterval(() => {
+            contentSlideIndex = (contentSlideIndex + 1) % contentSlides.length;
+            renderCurrentSlide();
+        }, 7000);
+    }
+}
+
+function renderDefaultContent() {
+    const slides = splitTextIntoSlides(offDutyText || "No content available.");
+    renderContentSlides(slides, "Marquee content", "Live update");
+}
+
+function buildContentSlidesFromPayload(payload) {
+    if (!payload) {
+        return splitTextIntoSlides(offDutyText || "No content available.");
+    }
+
+    if (payload.source_type === "MEDIA_ASSET") {
+        const slides = [];
+        if (payload.title) {
+            slides.push(`Now playing: ${payload.title}`);
+        }
+        if (payload.media_type) {
+            slides.push(`Type: ${payload.media_type}`);
+        }
+        if (payload.file_url) {
+            slides.push(`Source: ${payload.file_url}`);
+        }
+        return slides.length ? slides : splitTextIntoSlides(offDutyText || "No media available.");
+    }
+
+    if (payload.source_type === "PLAYLIST") {
+        return [
+            `Playlist: ${payload.playlist_name || "Untitled"}`,
+            `Items: ${payload.items?.length || 0}`
+        ];
+    }
+
+    if (
+        payload.source_type === "DOCTOR_SCHEDULE" ||
+        payload.source_type === "OPD_SCHEDULE" ||
+        payload.source_type === "SCHEDULE"
+    ) {
+        const slides = [];
+
+        if (payload.all_doctor_schedules && Array.isArray(payload.all_doctor_schedules)) {
+            payload.all_doctor_schedules.forEach((record) => {
+                slides.push(`Doctor: ${record.Doctor || "Unknown"}\nStatus: ${record.Status || "-"}`);
+            });
+        } else if (payload.opd_schedules && Array.isArray(payload.opd_schedules)) {
+            payload.opd_schedules.forEach((record) => {
+                slides.push(`Doctor: ${record.doctor || "Unknown"}\nRoom: ${record.opd_room || "-"}\nTime: ${record.start_time || "--"} - ${record.end_time || "--"}`);
+            });
+        } else {
+            slides.push(`Schedule source: ${payload.source_type || "Unknown"}`);
+        }
+
+        return slides.length ? slides : splitTextIntoSlides(offDutyText || "No schedule data available.");
+    }
+
+    return splitTextIntoSlides(offDutyText || "No content available.");
+}
 
 function absoluteUrl(rawUrl) {
     if (!rawUrl) return "";
@@ -196,15 +362,20 @@ function renderPlaylist(items, loop = false) {
     showCurrentItem();
 }
 
+
 async function renderSchedule(commandId, payload) {
     clearStage();
 
-    const isDoctor = payload.source_type === "DOCTOR_SCHEDULE" || payload.source_type === "SCHEDULE";
-    
-    if (isDoctor && payload.all_doctor_schedules && Array.isArray(payload.all_doctor_schedules)) {
+    // Prioritize doctor schedules over OPD schedules
+    if (payload.all_doctor_schedules && Array.isArray(payload.all_doctor_schedules)) {
         const schedules = payload.all_doctor_schedules;
         
         if (schedules.length) {
+            renderContentSlides(
+                schedules.map((schedule) => `Doctor: ${schedule.Doctor || "Unknown"}\nStatus: ${schedule.Status || "-"}`),
+                "Doctor schedule",
+                "Live update"
+            );
             const outOfStationCount = schedules.filter(s => s.Status === "Out of Station").length;
             const unavailableCount = schedules.filter(s => s.Status === "Unavailable").length;
             
@@ -223,8 +394,6 @@ async function renderSchedule(commandId, payload) {
     }
 
     if (
-        payload.source_type ===
-            "OPD_SCHEDULE" &&
         payload.opd_schedules &&
         Array.isArray(
             payload.opd_schedules
@@ -262,6 +431,12 @@ async function renderSchedule(commandId, payload) {
                         "--:--",
                 }));
 
+            renderContentSlides(
+                tableData.map((item) => `${item.Doctor}\nRoom: ${item["OPD Room"]}\nTime: ${item.Start} - ${item.End}`),
+                "OPD schedule",
+                "Live update"
+            );
+
             if (typeof renderTable === "function") {
                 renderTable(
                     tableData,
@@ -288,7 +463,9 @@ async function renderSchedule(commandId, payload) {
         }
     }
 
-    // SINGLE RECORD FALLBACK
+    // SINGLE RECORD FALLBACK - Default to doctor schedule
+    const isDoctor = true;
+    
     const title = isDoctor
         ? "Doctor Schedule"
         : "OPD Schedule";
@@ -340,6 +517,14 @@ async function renderSchedule(commandId, payload) {
         End: end,
     };
 
+    renderContentSlides(
+        [
+            `${title}\n${name}\n${detail}\nDay: ${day}\nTime: ${start} - ${end}`
+        ],
+        title,
+        "Live update"
+    );
+
     renderTable(
         [record],
         title
@@ -383,6 +568,7 @@ async function pollCommand() {
         if (payload.command === "STOP") {
             clearStage();
             stageNode.innerHTML = '<div class="placeholder">Playback stopped.</div>';
+            renderContentSlides([offDutyText || "Playback stopped"], "Status", "Player idle");
             setStatus("Playback stopped");
             await sendAck(data.command_id, "STOPPED", "Playback stopped");
             return;
@@ -396,6 +582,7 @@ async function pollCommand() {
 
         if (payload.source_type === "MEDIA_ASSET") {
             renderMedia(payload.media_type, payload.file_url, loop);
+            renderContentSlides(buildContentSlidesFromPayload(payload), "Media content", "Live update");
             setStatus(
                 `Playing media: ${payload.title || "Untitled"}` +
                 (loop ? " (looping)" : "")
@@ -406,6 +593,7 @@ async function pollCommand() {
 
         if (payload.source_type === "PLAYLIST") {
             renderPlaylist(payload.items || [], loop);
+            renderContentSlides(buildContentSlidesFromPayload(payload), "Playlist content", "Live update");
             setStatus(
                 `Playing playlist: ${payload.playlist_name || "Untitled"}` +
                 (loop ? " (looping)" : "")
@@ -414,14 +602,15 @@ async function pollCommand() {
             return;
         }
 
-        if (
-            payload.source_type === "DOCTOR_SCHEDULE" ||
-            payload.source_type === "OPD_SCHEDULE" ||
-            payload.source_type === "SCHEDULE"
-        ) {
-            await renderSchedule(data.command_id, payload);
-            return;
-        }
+        if (payload.source_type === "DOCTOR_SCHEDULE") {
+        await renderDoctorSchedule(data.command_id, payload);
+        return;
+    }
+
+    if (payload.source_type === "OPD_SCHEDULE") {
+        await renderOpdSchedule(data.command_id, payload);
+        return;
+    }
 
         setStatus("Unknown source type", true);
     } catch (error) {
@@ -430,5 +619,6 @@ async function pollCommand() {
     }
 }
 
+renderDefaultContent();
 pollCommand();
 setInterval(pollCommand, 5000);

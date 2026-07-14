@@ -76,6 +76,8 @@ class FloorForm(forms.ModelForm):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
+        print(user)
+
         if user:
             if user.role == "ADMIN":
                 facilities = Facility.objects.filter(
@@ -83,8 +85,19 @@ class FloorForm(forms.ModelForm):
                 )
             elif user.role == "STAFF":
                 facilities = Facility.objects.filter(
-                    facility__staff=user, is_active=True
+                    facility_staff=user, is_active=True
                 )
+            else:
+                facilities = Facility.objects.none()
+
+            print("Facilities:", list(facilities.values("id", "name")))
+
+            blocks = Block.objects.filter(
+                facility__in=facilities,
+                is_active=True,
+            )
+
+            print("Blocks:", list(blocks.values("id", "name")))
 
             self.fields["block"].queryset = Block.objects.filter(
                 facility__in=facilities
