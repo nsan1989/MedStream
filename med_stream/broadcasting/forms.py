@@ -88,8 +88,6 @@ class DevicePlaybackForm(forms.Form):
             )
             doctor_schedule_qs = DoctorSchedule.objects.filter(
                 doctor__organization=self.user.organization,
-                start_date__lte=today,
-                end_date__gte=today,
                 doctor__is_active=True,
             ).select_related("doctor")
 
@@ -148,21 +146,32 @@ class DevicePlaybackForm(forms.Form):
         if not devices or not devices.exists():
             raise forms.ValidationError("Select at least one device.")
 
-        selected_sources = sum(
+        media_selected = bool(media_asset)
+        playlist_selected = bool(playlist)
+        doctor_selected = bool(doctor_schedule)
+        opd_selected = bool(play_today_opd)
+
+        # Primary content (left pane)
+        primary_sources = sum(
             [
-                bool(media_asset),
-                bool(playlist),
-                bool(doctor_schedule),
-                bool(play_today_opd),
+                media_selected,
+                playlist_selected,
+                opd_selected,
             ]
         )
 
-        if selected_sources == 0:
+        # At least one thing must be selected
+        if primary_sources == 0 and not doctor_selected:
             raise forms.ValidationError(
-                "Select either a media asset, playlist, doctor schedule, or OPD schedule."
+                "Select a Media Asset, Playlist, OPD Schedule, or Doctor Schedule."
             )
 
-        if selected_sources > 1:
-            raise forms.ValidationError("Select only one source.")
+        # Only one primary source is allowed
+        if primary_sources > 1:
+            raise forms.ValidationError(
+                "Select only one primary source (Media Asset, Playlist, or OPD Schedule)."
+            )
+
+        # Doctor Schedule may accompany one primary source
 
         return cleaned_data

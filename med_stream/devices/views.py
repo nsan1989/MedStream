@@ -197,16 +197,20 @@ def DeviceNextCommand(request, device_id):
         return JsonResponse({"command": None, "detail": "No pending play command."})
 
     payload = command_log.metadata or {}
-    source_type = payload.get("source_type")
-    opd_schedules = payload.get("opd_schedules")
-    opd_count = len(opd_schedules) if isinstance(opd_schedules, list) else None
+
+    media = payload.get("media")
+    playlist = payload.get("playlist")
+    doctor_schedule = payload.get("doctor_schedule")
+    opd_schedule = payload.get("opd_schedule")
 
     logger.info(
         "DEVICE_CMD device_id=%s command_id=%s source_type=%s opd_count=%s",
         device.id,
         command_log.id,
-        source_type,
-        opd_count,
+        bool(media),
+        bool(playlist),
+        bool(doctor_schedule),
+        bool(opd_schedule),
     )
 
     return JsonResponse(

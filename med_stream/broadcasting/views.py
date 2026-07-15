@@ -97,26 +97,23 @@ def BroadcastView(request):
                     "facility_id": (
                         str(device.facility_id) if device.facility_id else None
                     ),
+                    "media": None,
+                    "playlist": None,
+                    "doctor_schedule": None,
+                    "opd_schedule": None,
                 }
 
                 # MEDIA ASSET
                 if media_asset:
-                    payload.update(
-                        {
-                            "source_type": "MEDIA_ASSET",
-                            "media_asset_id": str(media_asset.id),
-                            "title": media_asset.title,
-                            "media_type": (media_asset.media_type),
-                            "file_url": (
-                                media_asset.file.url if media_asset.file else ""
-                            ),
-                            "thumbnail_url": (
-                                media_asset.thumbnail.url
-                                if media_asset.thumbnail
-                                else ""
-                            ),
-                        }
-                    )
+                    payload["media"] = {
+                        "media_type": media_asset.media_type,
+                        "media_asset_id": str(media_asset.id),
+                        "title": media_asset.title,
+                        "file_url": media_asset.file.url if media_asset.file else "",
+                        "thumbnail_url": (
+                            media_asset.thumbnail.url if media_asset.thumbnail else ""
+                        ),
+                    }
                     try:
                         session = BroadcastSession.objects.create(
                             device=device,
@@ -140,100 +137,192 @@ def BroadcastView(request):
                         )
 
                 # PLAYLIST
-                elif playlist:
+                if playlist:
                     items = list(
                         PlaylistItem.objects.filter(playlist=playlist)
                         .select_related("media_asset")
                         .order_by("order")
                     )
 
-                    payload.update(
-                        {
-                            "source_type": "PLAYLIST",
-                            "playlist_id": str(playlist.id),
-                            "playlist_name": playlist.name,
-                            "items": [
-                                {
-                                    "order": item.order,
-                                    "duration": item.duration,
-                                    "media_asset_id": str(item.media_asset.id),
-                                    "title": (item.media_asset.title),
-                                    "media_type": (item.media_asset.media_type),
-                                    "file_url": (
-                                        item.media_asset.file.url
-                                        if item.media_asset.file
-                                        else ""
-                                    ),
-                                }
-                                for item in items
-                            ],
-                        }
+                    payload["playlist"] = {
+                        "playlist_id": str(playlist.id),
+                        "playlist_name": playlist.name,
+                        "items": [
+                            {
+                                "order": item.order,
+                                "duration": item.duration,
+                                "media_asset_id": str(item.media_asset.id),
+                                "title": item.media_asset.title,
+                                "media_type": item.media_asset.media_type,
+                                "file_url": (
+                                    item.media_asset.file.url
+                                    if item.media_asset.file
+                                    else ""
+                                ),
+                            }
+                            for item in items
+                        ],
+                    }
+
+                layout = _get_broadcast_layout(
+                    device,
+                    user.organization,
+                )
+
+                if not layout:
+                    playback_form.add_error(
+                        None,
+                        (
+                            "Unable to save broadcast "
+                            "session because no active "
+                            "layout was found for this "
+                            "organization."
+                        ),
+                    )
+                    continue
+
+                # DOCTOR OUT OF STATION
+                if doctor_schedule:
+                    all_doctors = Doctor.objects.filter(
+                        organization=user.organization,
+                        is_active=True,
                     )
 
-                else:
-                    layout = _get_broadcast_layout(
-                        device,
-                        user.organization,
+                    if user.role == "STAFF":
+                        all_doctors = all_doctors.filter(facility=user.facility)
+
+                    all_doctor_schedules = (
+                        DoctorSchedule.objects.filter(
+                            doctor__in=all_doctors,
+                        )
+                        .select_related("doctor")
+                        .order_by(
+                            "doctor__name",
+                            "start_date",
+                        )
                     )
 
-                    if not layout:
+                    doctor_schedule_items = []
+
+                    for sched in all_doctor_schedules:
+                        doctor_schedule_items.append(
+                            {
+                                "Doctor": (sched.doctor.name),
+                                "Status": ("Out of Station"),
+                                "From": (sched.start_date.isoformat()),
+                                "To": (sched.end_date.isoformat()),
+                                "Reason": (sched.reason or "-"),
+                            }
+                        )
+
+                    payload["doctor_schedule"] = {
+                        "doctor_schedule_id": str(doctor_schedule.id),
+                        "all_doctor_schedules": doctor_schedule_items,
+                    }
+
+                    try:
+                        session = BroadcastSession.objects.create(
+                            device=device,
+                            doctor_schedule=doctor_schedule,
+                            layout=layout,
+                            started_at=timezone.now(),
+                            organization=user.organization,
+                            facility=device.facility,
+                        )
+                        _create_broadcast_audit_log(
+                            request=request,
+                            user=user,
+                            session=session,
+                            source_type="DOCTOR_SCHEDULE",
+                        )
+                    except ValidationError as exc:
+                        playback_form.add_error(
+                            None,
+                            exc.messages if exc.messages else str(exc),
+                        )
+
+                # MULTIPLE OPD SCHEDULES
+                if play_today_opd:
+                    today = timezone.now().date()
+                    current_day = today.weekday()
+
+                    out_of_station_doctor_ids = DoctorSchedule.objects.filter(
+                        doctor__organization=user.organization,
+                        start_date__lte=today,
+                        end_date__gte=today,
+                        doctor__is_active=True,
+                    ).values_list(
+                        "doctor_id",
+                        flat=True,
+                    )
+
+                    opd_schedules = (
+                        OPDSchedule.objects.filter(
+                            doctor__organization=user.organization,
+                            is_available=True,
+                        )
+                        .filter(
+                            Q(opd_date=today)
+                            | Q(
+                                opd_date__isnull=True,
+                                day_of_week=current_day,
+                            )
+                        )
+                        .exclude(doctor_id__in=out_of_station_doctor_ids)
+                        .select_related(
+                            "doctor",
+                            "opd_room",
+                        )
+                        .order_by(
+                            "opd_room__name",
+                            "start_time",
+                        )
+                    )
+
+                    if user.role == "STAFF":
+                        opd_schedules = opd_schedules.filter(
+                            opd_room__facility=user.facility
+                        )
+
+                    opd_schedules = list(opd_schedules)
+
+                    if not opd_schedules:
                         playback_form.add_error(
                             None,
                             (
-                                "Unable to save broadcast "
-                                "session because no active "
-                                "layout was found for this "
-                                "organization."
+                                "No OPD schedules found for today "
+                                "after applying availability and "
+                                "out-of-station filters."
                             ),
                         )
                         continue
 
-                    # DOCTOR OUT OF STATION
-                    elif doctor_schedule:
-                        all_doctors = Doctor.objects.filter(
-                            organization=user.organization,
-                            is_active=True,
-                        )
-
-                        if user.role == "STAFF":
-                            all_doctors = all_doctors.filter(facility=user.facility)
-
-                        all_doctor_schedules = (
-                            DoctorSchedule.objects.filter(
-                                doctor__in=all_doctors,
-                            )
-                            .select_related("doctor")
-                            .order_by(
-                                "doctor__name",
-                                "start_date",
-                            )
-                        )
-
-                        doctor_schedule_items = []
-
-                        for sched in all_doctor_schedules:
-                            doctor_schedule_items.append(
-                                {
-                                    "Doctor": (sched.doctor.name),
-                                    "Status": ("Out of Station"),
-                                    "From": (sched.start_date.isoformat()),
-                                    "To": (sched.end_date.isoformat()),
-                                    "Reason": (sched.reason or "-"),
-                                }
-                            )
-
-                        payload.update(
+                    payload["opd_schedule"] = {
+                        "opd_schedules": [
                             {
-                                "source_type": ("DOCTOR_SCHEDULE"),
-                                "doctor_schedule_id": str(doctor_schedule.id),
-                                "all_doctor_schedules": (doctor_schedule_items),
+                                "doctor": sched.doctor.name,
+                                "opd_room": sched.opd_room.name,
+                                "department": (
+                                    sched.doctor.department.name
+                                    if getattr(sched.doctor, "department", None)
+                                    else "-"
+                                ),
+                                "opd_date": (
+                                    sched.opd_date.isoformat() if sched.opd_date else ""
+                                ),
+                                "day": sched.get_day_of_week_display(),
+                                "start_time": sched.start_time.isoformat(),
+                                "end_time": sched.end_time.isoformat(),
                             }
-                        )
+                            for sched in opd_schedules
+                        ]
+                    }
 
-                        try:
+                    try:
+                        for sched in opd_schedules:
                             session = BroadcastSession.objects.create(
                                 device=device,
-                                doctor_schedule=doctor_schedule,
+                                opdschedule=sched,
                                 layout=layout,
                                 started_at=timezone.now(),
                                 organization=user.organization,
@@ -243,122 +332,14 @@ def BroadcastView(request):
                                 request=request,
                                 user=user,
                                 session=session,
-                                source_type="DOCTOR_SCHEDULE",
-                            )
-                        except ValidationError as exc:
-                            playback_form.add_error(
-                                None,
-                                exc.messages if exc.messages else str(exc),
+                                source_type="OPD_SCHEDULE",
                             )
 
-                    # MULTIPLE OPD SCHEDULES
-                    elif play_today_opd:
-                        today = timezone.now().date()
-                        current_day = today.weekday()
-
-                        out_of_station_doctor_ids = DoctorSchedule.objects.filter(
-                            doctor__organization=user.organization,
-                            start_date__lte=today,
-                            end_date__gte=today,
-                            doctor__is_active=True,
-                        ).values_list(
-                            "doctor_id",
-                            flat=True,
+                    except ValidationError as exc:
+                        playback_form.add_error(
+                            None,
+                            exc.messages if exc.messages else str(exc),
                         )
-
-                        opd_schedules = (
-                            OPDSchedule.objects.filter(
-                                doctor__organization=user.organization,
-                                is_available=True,
-                            )
-                            .filter(
-                                Q(opd_date=today)
-                                | Q(
-                                    opd_date__isnull=True,
-                                    day_of_week=current_day,
-                                )
-                            )
-                            .exclude(doctor_id__in=out_of_station_doctor_ids)
-                            .select_related(
-                                "doctor",
-                                "opd_room",
-                            )
-                            .order_by(
-                                "opd_room__name",
-                                "start_time",
-                            )
-                        )
-
-                        if user.role == "STAFF":
-                            opd_schedules = opd_schedules.filter(
-                                opd_room__facility=user.facility
-                            )
-
-                        opd_schedules = list(opd_schedules)
-
-                        if not opd_schedules:
-                            playback_form.add_error(
-                                None,
-                                (
-                                    "No OPD schedules found for today "
-                                    "after applying availability and "
-                                    "out-of-station filters."
-                                ),
-                            )
-                            continue
-
-                        payload.update(
-                            {
-                                "source_type": ("OPD_SCHEDULE"),
-                                "opd_schedules": [
-                                    {
-                                        "doctor": (sched.doctor.name),
-                                        "opd_room": (sched.opd_room.name),
-                                        "department": (
-                                            sched.doctor.department.name
-                                            if getattr(
-                                                sched.doctor,
-                                                "department",
-                                                None,
-                                            )
-                                            else "-"
-                                        ),
-                                        "opd_date": (
-                                            sched.opd_date.isoformat()
-                                            if sched.opd_date
-                                            else ""
-                                        ),
-                                        "day": (sched.get_day_of_week_display()),
-                                        "start_time": (sched.start_time.isoformat()),
-                                        "end_time": (sched.end_time.isoformat()),
-                                    }
-                                    for sched in opd_schedules
-                                ],
-                            }
-                        )
-
-                        try:
-                            for sched in opd_schedules:
-                                session = BroadcastSession.objects.create(
-                                    device=device,
-                                    opdschedule=sched,
-                                    layout=layout,
-                                    started_at=timezone.now(),
-                                    organization=user.organization,
-                                    facility=device.facility,
-                                )
-                                _create_broadcast_audit_log(
-                                    request=request,
-                                    user=user,
-                                    session=session,
-                                    source_type="OPD_SCHEDULE",
-                                )
-
-                        except ValidationError as exc:
-                            playback_form.add_error(
-                                None,
-                                exc.messages if exc.messages else str(exc),
-                            )
 
                 # DEVICE LOG
                 DeviceLog.objects.create(

@@ -1,3 +1,4 @@
+// Object destructuring.
 const {
     deviceId,
     deviceType,
@@ -5,20 +6,38 @@ const {
     offDutyText = ""
 } = document.currentScript.dataset;
 
+// Variable declaration.
 let lastCommandId = null;
 let playlistTimer = null;
 let contentSlideTimer = null;
 let contentSlides = [];
 let contentSlideIndex = 0;
 
+// Get the element with the specified ID.
 const statusNode = document.getElementById("player-status");
+const layoutNode = document.getElementById("player-layout");
 const stageNode = document.getElementById("media-pane");
 const contentPane = document.getElementById("content-pane");
 
+// add css classes
 const deviceTypeClass = `device-${deviceType.toLowerCase().replace(/_/g, "-")}`;
 document.body.classList.add(deviceTypeClass);
 document.body.classList.add(deviceOrientation.toLowerCase());
 
+// Function to set layout
+function setLayout(mode) {
+
+    if (mode === "fullscreen") {
+        layoutNode.classList.remove("split");
+        layoutNode.classList.add("fullscreen");
+    } else {
+        layoutNode.classList.remove("fullscreen");
+        layoutNode.classList.add("split");
+    }
+
+}
+
+// Function to update status message
 function setStatus(text, isError = false) {
     if (!statusNode) {
         return;
@@ -27,6 +46,7 @@ function setStatus(text, isError = false) {
     statusNode.style.color = isError ? "#ff9999" : "#9ad39a";
 }
 
+// Device settings
 function applyDeviceSettings() {
     if (deviceType === "LED_WALL") {
         stageNode.style.background = "#000";
@@ -40,6 +60,7 @@ function applyDeviceSettings() {
 
 applyDeviceSettings();
 
+// Function to clear the content of the pane
 function clearContentPane() {
     if (contentSlideTimer) {
         clearInterval(contentSlideTimer);
@@ -48,6 +69,7 @@ function clearContentPane() {
     contentPane.innerHTML = "";
 }
 
+// Security utility to prevent HTML injection and Cross-Site Scripting (XSS)
 function escapeHtml(value) {
     return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -57,6 +79,7 @@ function escapeHtml(value) {
         .replace(/'/g, "&#39;");
 }
 
+// Function to split long text into smaller.
 function splitTextIntoSlides(text, maxChars = 220) {
     const cleaned = String(text || "").replace(/\r/g, "").trim();
     if (!cleaned) {
@@ -83,6 +106,7 @@ function splitTextIntoSlides(text, maxChars = 220) {
     return chunks;
 }
 
+// Function to display text content as a slideshow
 function renderContentSlides(slides, title = "Content", subtitle = "") {
     clearContentPane();
 
@@ -144,11 +168,13 @@ function renderContentSlides(slides, title = "Content", subtitle = "") {
     }
 }
 
+// Default content
 function renderDefaultContent() {
     const slides = splitTextIntoSlides(offDutyText || "No content available.");
     renderContentSlides(slides, "Marquee content", "Live update");
 }
 
+// Function to convert payloads into standard array
 function buildContentSlidesFromPayload(payload) {
     if (!payload) {
         return splitTextIntoSlides(offDutyText || "No content available.");
@@ -200,6 +226,7 @@ function buildContentSlidesFromPayload(payload) {
     return splitTextIntoSlides(offDutyText || "No content available.");
 }
 
+// Function to convert URL to Absolute/Complete URL
 function absoluteUrl(rawUrl) {
     if (!rawUrl) return "";
     try {
@@ -209,6 +236,7 @@ function absoluteUrl(rawUrl) {
     }
 }
 
+// To stop any active playlist timer and remove everything currently displayed in the media area
 function clearStage() {
     if (playlistTimer) {
         clearInterval(playlistTimer);
@@ -290,7 +318,10 @@ async function sendAck(commandId, status, message) {
 }
 
 function renderMedia(mediaType, fileUrl, loop = false) {
-    clearStage();
+
+    setLayout("fullscreen");
+
+    clearContentPane();
 
     const absUrl = absoluteUrl(fileUrl);
     if (!absUrl) {
@@ -362,7 +393,7 @@ function renderPlaylist(items, loop = false) {
     showCurrentItem();
 }
 
-
+/*
 async function renderSchedule(commandId, payload) {
     clearStage();
 
@@ -548,6 +579,111 @@ async function renderSchedule(commandId, payload) {
         } schedule displayed`
     );
 }
+*/
+
+async function renderDoctorSchedule(commandId, payload) {
+
+    clearContentPane();
+
+    const schedules = payload.all_doctor_schedules || [];
+
+    if (!schedules.length) {
+        renderContentSlides(
+            ["No doctor schedules available."],
+            "Doctor Schedule",
+            "Live update"
+        );
+
+        setStatus("No doctor schedules available.");
+        
+        await sendAck(
+            commandId,
+            "PLAYING",
+            "No doctor schedules available."
+        );
+
+        return;
+    }
+
+    const slides = schedules.map(item => 
+        `Doctor : ${item.Doctor}
+        Status : ${item.Status}
+        From : ${item.From}
+        To : ${item.To}
+        Reason : ${item.Reason}`
+    );
+
+    renderContentSlides(
+        slides,
+        "Doctor Schedule",
+        "Live update"
+    );
+
+    setStatus("Displaying doctor schedules");
+
+    await sendAck(
+        commandId,
+        "PLAYING",
+        "Doctor schedules displayed"
+    );
+}
+
+async function renderOpdSchedule(commandId, payload) {
+
+    setLayout("split");
+
+    clearStage();
+
+    const schedules = payload.opd_schedules || [];
+
+    if (!schedules.length) {
+
+        stageNode.innerHTML = '<div class="placeholder">No OPD schedules available.</div>';
+
+        setStatus("No OPD schedules available.");
+
+        await sendAck(
+            commandId,
+            "PLAYING",
+            "No OPD schedules available."
+        );
+
+        return;
+    }
+
+    const tableData = schedules.map(item => ({
+        Doctor: item.doctor,
+        Room: item.opd_room,
+        Department: item.department,
+        Date: item.opd_date || "Recurring",
+        Day: item.day,
+        Start: item.start_time,
+        End: item.end_time,
+    }));
+
+    if (typeof renderTable === "function") {
+        renderTable(
+            tableData,
+            "Today's OPD Schedule"
+        );
+    } else {
+        renderFallbackTable(
+            tableData,
+            "Today's OPD Schedule"
+        );
+    }
+
+    setStatus(
+        "Displaying OPD schedule"
+    );
+
+    await sendAck(
+        commandId,
+        "PLAYING",
+        "OPD schedule displayed"
+    );
+
+}
 
 async function pollCommand() {
     try {
@@ -567,8 +703,9 @@ async function pollCommand() {
 
         if (payload.command === "STOP") {
             clearStage();
+            clearContentPane();
             stageNode.innerHTML = '<div class="placeholder">Playback stopped.</div>';
-            renderContentSlides([offDutyText || "Playback stopped"], "Status", "Player idle");
+            renderDefaultContent();
             setStatus("Playback stopped");
             await sendAck(data.command_id, "STOPPED", "Playback stopped");
             return;
@@ -580,39 +717,94 @@ async function pollCommand() {
 
         const loop = Boolean(payload.loop);
 
-        if (payload.source_type === "MEDIA_ASSET") {
-            renderMedia(payload.media_type, payload.file_url, loop);
-            renderContentSlides(buildContentSlidesFromPayload(payload), "Media content", "Live update");
-            setStatus(
-                `Playing media: ${payload.title || "Untitled"}` +
-                (loop ? " (looping)" : "")
-            );
-            await sendAck(data.command_id, "PLAYING", "Media playback started");
-            return;
+        if (payload.media) {
+
+            switch (payload.media.media_type) {
+
+                case "IMAGE":
+                case "VIDEO":
+                case "AUDIO":
+                case "HTML":
+
+                    setLayout("fullscreen");
+
+                    clearContentPane();
+
+                    renderMedia(
+                        payload.media.media_type,
+                        payload.media.file_url,
+                        loop
+                    );
+
+                    break;
+
+                case "PDF":
+
+                    setLayout("split");
+
+                    renderPdf(
+                        payload.media.file_url,
+                        loop
+                    );
+
+                    break;
+            }
         }
 
-        if (payload.source_type === "PLAYLIST") {
-            renderPlaylist(payload.items || [], loop);
-            renderContentSlides(buildContentSlidesFromPayload(payload), "Playlist content", "Live update");
-            setStatus(
-                `Playing playlist: ${payload.playlist_name || "Untitled"}` +
-                (loop ? " (looping)" : "")
+        if (payload.playlist) {
+
+            setLayout("fullscreen");
+
+            clearContentPane();
+
+            renderPlaylist(
+                payload.playlist.items || [],
+                loop
             );
-            await sendAck(data.command_id, "PLAYING", "Playlist playback started");
-            return;
+
+            await sendAck(
+                data.command_id,
+                "PLAYING",
+                "Playlist playback started"
+            );
         }
 
-        if (payload.source_type === "DOCTOR_SCHEDULE") {
-        await renderDoctorSchedule(data.command_id, payload);
-        return;
-    }
+        /*
+        if (
+            payload.source_type === "DOCTOR_SCHEDULE" ||
+            payload.source_type === "OPD_SCHEDULE"
+        ) {
+            await renderSchedule(data.command_id, payload);
+            return;
+        }
+        */
+        
+        if (payload.doctor_schedule) {
 
-    if (payload.source_type === "OPD_SCHEDULE") {
-        await renderOpdSchedule(data.command_id, payload);
-        return;
-    }
+            setLayout("split");
 
-        setStatus("Unknown source type", true);
+            await renderDoctorSchedule(
+                data.command_id,
+                payload.doctor_schedule
+            );
+        }
+
+        if (payload.opd_schedule) {
+
+            setLayout("split");
+
+            await renderOpdSchedule(
+                data.command_id,
+                payload.opd_schedule
+            );
+        }
+
+        await sendAck(
+            data.command_id,
+            "PLAYING",
+            "Playback started"
+        );
+
     } catch (error) {
         console.error(error);
         setStatus("Polling error", true);
