@@ -10,3 +10,7 @@
     --secondary-color: #FFFFFF;
     --tertiary-color: #FF9900;
 }
+
+body {
+    font-family: "Poppins", "Segoe UI", Roboto, Arial, sans-serif;
+}

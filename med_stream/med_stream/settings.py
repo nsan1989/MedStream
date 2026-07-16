@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     "crispy_bootstrap5",
     "import_export",
     "django_bootstrap_icons",
-    "django_browser_reload",
     # Local apps
     "accounts",
     "core",
@@ -82,7 +81,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "core.middleware.SubscriptionAccessMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 ROOT_URLCONF = "med_stream.urls"

@@ -6,12 +6,6 @@
   Dashboard
 {% endblock %}
 
-{% block extra_css %}
-  {{ block.super }}
-  <link rel="preload" href="{% static 'css/dashboard/admin_style.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="{% static 'css/dashboard/admin_style.css' %}"></noscript>
-{% endblock %}
-
 {% block app_content %}
   <div class="dashboard-wrapper">
     <div class="breadcrumb-content">
@@ -38,4 +32,12 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="preload" href="{% static 'css/dashboard/admin_style.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/dashboard/admin_style.css' %}"></noscript>
 {% endblock %}

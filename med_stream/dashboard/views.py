@@ -12,6 +12,7 @@ from schedules.models import Doctor, OPDSchedule, DoctorSchedule
 from broadcasting.models import BroadcastSession
 from media_library.models import MediaAsset
 from playlists.models import Playlist
+import time
 
 
 # Super admin dashboard view.
@@ -84,20 +85,13 @@ def StaffDashboard(request):
     today = timezone.localdate()
     current_day = today.weekday()
 
-    all_device = Device.objects.filter(facility=user.facility, is_active=True).order_by(
-        "created_at"
-    )
-    total_device = all_device.count()
-    all_doctors = Doctor.objects.filter(
-        facility=user.facility, is_active=True
-    ).order_by("created_at")
-    total_doctors = all_doctors.count()
-
     context = {
-        "device": all_device,
-        "total_device": total_device,
-        "doctors": all_doctors,
-        "total_doctors": total_doctors,
+        "total_device": Device.objects.filter(
+            facility=user.facility, is_active=True
+        ).count(),
+        "total_doctors": Doctor.objects.filter(
+            facility=user.facility, is_active=True
+        ).count(),
         "online_devices": DeviceHealth.objects.filter(
             device__facility=user.facility,
             status=DeviceStatus.ONLINE,

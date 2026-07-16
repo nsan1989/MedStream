@@ -39,8 +39,8 @@
 
 .metric-card p {
     margin: 0.35rem 0 0;
-    font-size: 1.45rem;
-    font-weight: 700;
+    font-size: 1.1rem;
+    font-weight: 600;
     color: #1f2f44;
 }
 
@@ -58,7 +58,10 @@
     .welcome-content h3 {
         text-transform: uppercase;
         color: var(--primary-color);
-        font-weight: bold;
+        font-weight: 600;
+        font-size: 1.15rem;
+        margin: 0;
+        line-height: 1.2;
     }
 }
 
