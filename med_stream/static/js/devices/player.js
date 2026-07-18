@@ -170,8 +170,8 @@ function renderContentSlides(slides, title = "Content", subtitle = "") {
 
 // Default content
 function renderDefaultContent() {
-    const slides = splitTextIntoSlides(offDutyText || "No content available.");
-    renderContentSlides(slides, "Marquee content", "Live update");
+    const slides = splitTextIntoSlides(offDutyText);
+    renderContentSlides(slides, "Content not available", "Live update");
 }
 
 // Function to convert payloads into standard array
@@ -590,7 +590,7 @@ async function renderDoctorSchedule(commandId, payload) {
     if (!schedules.length) {
         renderContentSlides(
             ["No doctor schedules available."],
-            "Doctor Schedule",
+            "Doctor Off Schedule",
             "Live update"
         );
 
@@ -615,7 +615,7 @@ async function renderDoctorSchedule(commandId, payload) {
 
     renderContentSlides(
         slides,
-        "Doctor Schedule",
+        "Doctor Off Schedule",
         "Live update"
     );
 
