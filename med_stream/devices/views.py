@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from .forms import DeviceForm
 from django.core.exceptions import PermissionDenied
 from accounts.enums import UserRole
@@ -19,6 +20,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 HEALTH_OFFLINE_TIMEOUT_SECONDS = 60
+PLAYER_COMMANDS = {"PLAY", "STOP"}
 
 
 def mark_device_online(device):
@@ -170,7 +172,8 @@ def DeviceNextCommand(request, device_id):
     remote_ip = get_remote_ip(request)
     registered_ip = (device.ip_address or "").strip()
 
-    if remote_ip and remote_ip not in ["127.0.0.1", "::1"]:
+    enforce_ip_match = getattr(settings, "DEVICE_PLAYER_ENFORCE_IP_MATCH", False)
+    if enforce_ip_match and remote_ip and remote_ip not in ["127.0.0.1", "::1"]:
         # Enforce strict match when a device IP is configured.
         if registered_ip and remote_ip != registered_ip:
             return JsonResponse(
@@ -182,19 +185,32 @@ def DeviceNextCommand(request, device_id):
                 status=403,
             )
 
-    logs = DeviceLog.objects.filter(device=device, log_type=LogType.INFO).order_by(
-        "-created_at"
-    )[:50]
+    logs = list(
+        DeviceLog.objects.filter(device=device, log_type=LogType.INFO).order_by(
+            "-created_at"
+        )[:50]
+    )
 
     command_log = None
     for log in logs:
         metadata = log.metadata or {}
-        if metadata.get("command") == "PLAY" and not metadata.get("executed", False):
+        if (
+            metadata.get("command") in PLAYER_COMMANDS
+            and not metadata.get("executed", False)
+        ):
             command_log = log
             break
 
     if not command_log:
-        return JsonResponse({"command": None, "detail": "No pending play command."})
+        for log in logs:
+            metadata = log.metadata or {}
+            if metadata.get("command") in PLAYER_COMMANDS:
+                if metadata.get("command") == "PLAY":
+                    command_log = log
+                break
+
+    if not command_log:
+        return JsonResponse({"command": None, "detail": "No active playback command."})
 
     payload = command_log.metadata or {}
 

@@ -690,6 +690,10 @@ async function pollCommand() {
         const response = await fetch(`/device/player/${deviceId}/next-command/`);
         const data = await response.json();
 
+        if (!response.ok) {
+            throw new Error(data.detail || `Polling failed with status ${response.status}`);
+        }
+
         if (!data.command_id || !data.payload || !data.payload.command) {
             return;
         }
