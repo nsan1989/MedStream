@@ -13,6 +13,7 @@ from schedules.models import Doctor, DoctorSchedule, OPDSchedule
 from django.utils import timezone
 from .enums import BroadcastStatus
 from audit_logs.models import AuditLog
+from collections import defaultdict
 
 
 def _get_broadcast_layout(device, organization):
@@ -261,13 +262,7 @@ def BroadcastView(request):
                             doctor__organization=user.organization,
                             is_available=True,
                         )
-                        .filter(
-                            Q(opd_date=today)
-                            | Q(
-                                opd_date__isnull=True,
-                                day_of_week=current_day,
-                            )
-                        )
+                        .filter(Q(opd_date=today) | Q(opd_date__isnull=True))
                         .exclude(doctor_id__in=out_of_station_doctor_ids)
                         .select_related(
                             "doctor",
@@ -319,21 +314,19 @@ def BroadcastView(request):
                     }
 
                     try:
-                        for sched in opd_schedules:
-                            session = BroadcastSession.objects.create(
-                                device=device,
-                                opdschedule=sched,
-                                layout=layout,
-                                started_at=timezone.now(),
-                                organization=user.organization,
-                                facility=device.facility,
-                            )
-                            _create_broadcast_audit_log(
-                                request=request,
-                                user=user,
-                                session=session,
-                                source_type="OPD_SCHEDULE",
-                            )
+                        session = BroadcastSession.objects.create(
+                            device=device,
+                            layout=layout,
+                            started_at=timezone.now(),
+                            organization=user.organization,
+                            facility=device.facility,
+                        )
+                        _create_broadcast_audit_log(
+                            request=request,
+                            user=user,
+                            session=session,
+                            source_type="OPD_SCHEDULE",
+                        )
 
                     except ValidationError as exc:
                         playback_form.add_error(

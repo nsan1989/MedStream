@@ -651,15 +651,38 @@ async function renderOpdSchedule(commandId, payload) {
         return;
     }
 
-    const tableData = schedules.map(item => ({
-        Doctor: item.doctor,
-        Room: item.opd_room,
-        Department: item.department,
-        Date: item.opd_date || "Recurring",
-        Day: item.day,
-        Start: item.start_time,
-        End: item.end_time,
+    /* table data */
+
+    const grouped = {};
+
+    schedules.forEach(item => {
+        const key = [
+            item.doctor,
+            item.opd_room,
+            item.department,
+            item.opd_date || "Recurring",
+            item.start_time,
+            item.end_time
+        ].join("|");
+
+        if (!grouped[key]) {
+            grouped[key] = {
+                Doctor: item.doctor,
+                Department: item.department,
+                Days: [],
+                Timing: `${item.start_time} - ${item.end_time}`,
+            };
+        }
+
+        grouped[key].Days.push(item.day);
+    });
+
+    const tableData = Object.values(grouped).map(item => ({
+        ...item,
+        Days: item.Days.join(", "),
     }));
+
+    /* end */
 
     if (typeof renderTable === "function") {
         renderTable(
