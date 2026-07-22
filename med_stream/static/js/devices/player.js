@@ -608,9 +608,7 @@ async function renderDoctorSchedule(commandId, payload) {
     const slides = schedules.map(item => 
         `Doctor : ${item.Doctor}
         Status : ${item.Status}
-        From : ${item.From}
-        To : ${item.To}
-        Reason : ${item.Reason}`
+        Date : ${item.From} - ${item.To}`
     );
 
     renderContentSlides(
@@ -687,12 +685,12 @@ async function renderOpdSchedule(commandId, payload) {
     if (typeof renderTable === "function") {
         renderTable(
             tableData,
-            "Today's OPD Schedule"
+            "OPD Schedule"
         );
     } else {
         renderFallbackTable(
             tableData,
-            "Today's OPD Schedule"
+            "OPD Schedule"
         );
     }
 

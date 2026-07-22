@@ -48,10 +48,10 @@ class DevicePlaybackForm(forms.Form):
     playlist = forms.ModelChoiceField(
         queryset=Playlist.objects.none(), required=False, empty_label="Select Playlist"
     )
-    doctor_schedule = forms.ModelChoiceField(
+    doctor_schedule = forms.ModelMultipleChoiceField(
         queryset=DoctorSchedule.objects.none(),
         required=False,
-        empty_label="Select Doctor Schedule",
+        widget=forms.SelectMultiple(attrs={"class": "form-control"}),
     )
     play_today_opd = forms.BooleanField(
         required=False,
@@ -148,7 +148,7 @@ class DevicePlaybackForm(forms.Form):
 
         media_selected = bool(media_asset)
         playlist_selected = bool(playlist)
-        doctor_selected = bool(doctor_schedule)
+        doctor_selected = doctor_schedule is not None and doctor_schedule.exists()
         opd_selected = bool(play_today_opd)
 
         # Primary content (left pane)

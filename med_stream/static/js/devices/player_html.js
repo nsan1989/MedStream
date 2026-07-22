@@ -121,7 +121,7 @@ async function renderHtml(fileUrl) {
             renderData,
             data.source_type ===
                 "OPD_SCHEDULE"
-                ? "Today's OPD Schedule"
+                ? "OPD Schedule"
                 : ""
         );
     } catch (error) {

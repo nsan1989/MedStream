@@ -184,63 +184,45 @@ def BroadcastView(request):
 
                 # DOCTOR OUT OF STATION
                 if doctor_schedule:
-                    all_doctors = Doctor.objects.filter(
-                        organization=user.organization,
-                        is_active=True,
-                    )
-
-                    if user.role == "STAFF":
-                        all_doctors = all_doctors.filter(facility=user.facility)
-
-                    all_doctor_schedules = (
-                        DoctorSchedule.objects.filter(
-                            doctor__in=all_doctors,
-                        )
-                        .select_related("doctor")
-                        .order_by(
-                            "doctor__name",
-                            "start_date",
-                        )
-                    )
 
                     doctor_schedule_items = []
 
-                    for sched in all_doctor_schedules:
+                    for sched in doctor_schedule:
                         doctor_schedule_items.append(
                             {
-                                "Doctor": (sched.doctor.name),
-                                "Status": ("Out of Station"),
-                                "From": (sched.start_date.isoformat()),
-                                "To": (sched.end_date.isoformat()),
-                                "Reason": (sched.reason or "-"),
+                                "Doctor": sched.doctor.name,
+                                "Status": "Out of Station",
+                                "From": sched.start_date.isoformat(),
+                                "To": sched.end_date.isoformat(),
+                                "Reason": sched.reason or "-",
                             }
                         )
 
                     payload["doctor_schedule"] = {
-                        "doctor_schedule_id": str(doctor_schedule.id),
                         "all_doctor_schedules": doctor_schedule_items,
                     }
 
-                    try:
-                        session = BroadcastSession.objects.create(
-                            device=device,
-                            doctor_schedule=doctor_schedule,
-                            layout=layout,
-                            started_at=timezone.now(),
-                            organization=user.organization,
-                            facility=device.facility,
-                        )
-                        _create_broadcast_audit_log(
-                            request=request,
-                            user=user,
-                            session=session,
-                            source_type="DOCTOR_SCHEDULE",
-                        )
-                    except ValidationError as exc:
-                        playback_form.add_error(
-                            None,
-                            exc.messages if exc.messages else str(exc),
-                        )
+                    for sched in doctor_schedule:
+                        try:
+                            session = BroadcastSession.objects.create(
+                                device=device,
+                                doctor_schedule=sched,
+                                layout=layout,
+                                started_at=timezone.now(),
+                                organization=user.organization,
+                                facility=device.facility,
+                            )
+                            _create_broadcast_audit_log(
+                                request=request,
+                                user=user,
+                                session=session,
+                                source_type="DOCTOR_SCHEDULE",
+                            )
+                        except ValidationError as exc:
+                            playback_form.add_error(
+                                None,
+                                exc.messages if exc.messages else str(exc),
+                            )
 
                 # MULTIPLE OPD SCHEDULES
                 if play_today_opd:
