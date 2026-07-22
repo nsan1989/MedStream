@@ -119,6 +119,81 @@
         </tbody>
       </table>
     </div>
+    {% if broadcasts.has_other_pages %}
+    <nav aria-label="Broadcast pagination">
+        <ul class="pagination justify-content-center">
+
+            <!-- First -->
+            {% if broadcasts.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo;&laquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;&laquo;</span>
+                </li>
+            {% endif %}
+
+            <!-- Previous -->
+            {% if broadcasts.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ broadcasts.previous_page_number }}">
+                        Previous
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Previous</span>
+                </li>
+            {% endif %}
+
+            <!-- Page Numbers -->
+            {% for num in broadcasts.paginator.page_range %}
+                {% if num == broadcasts.number %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > broadcasts.number|add:'-3' and num < broadcasts.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Next -->
+            {% if broadcasts.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ broadcasts.next_page_number }}">
+                        Next
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Next</span>
+                </li>
+            {% endif %}
+
+            <!-- Last -->
+            {% if broadcasts.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ broadcasts.paginator.num_pages }}">
+                        &raquo;&raquo;
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;&raquo;</span>
+                </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+
+    <div class="text-center mb-3">
+        Showing page {{ broadcasts.number }} of {{ broadcasts.paginator.num_pages }}
+        ({{ broadcasts.paginator.count }} total broadcasts)
+    </div>
+    {% endif %}
   </div>
 {% endblock %}
 

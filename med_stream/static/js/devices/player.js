@@ -373,6 +373,7 @@ function renderPlaylist(items, loop = false) {
     let playlistLoop = Boolean(loop);
 
     function showCurrentItem() {
+        clearStage();
         const item = items[index];
         renderMedia(item.media_type, item.file_url, playlistLoop);
         setStatus(`Playing playlist item ${index + 1} of ${items.length}`);
@@ -382,12 +383,11 @@ function renderPlaylist(items, loop = false) {
         if (playlistTimer) {
             clearTimeout(playlistTimer);
         }
-        if (playlistLoop || index < items.length - 1) {
-            playlistTimer = setTimeout(() => {
-                index = (index + 1) % items.length;
-                showCurrentItem();
-            }, waitMs);
-        }
+        
+        playlistTimer = setTimeout(() => {
+            index = (index + 1) % items.length;
+            showCurrentItem();
+        }, waitMs);
     }
 
     showCurrentItem();

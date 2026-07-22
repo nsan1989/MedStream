@@ -29,6 +29,16 @@
     z-index: 1;
 }
 
+.logo-content {
+    border: 1px solid #fff;
+    background-color: #fff;
+}
+
+.logo-content img {
+    width: 16rem;
+    height: 20rem;
+}
+
 .top-content {
     margin-bottom: 2.5rem;
 }

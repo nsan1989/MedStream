@@ -3,6 +3,9 @@ document.addEventListener("DOMContentLoaded", function() {
     const leftContent = document.getElementById("left-content");
     const rightContent = document.getElementById("right-content");
 
+    const titleContent = document.querySelector(".title-content");
+    const logoContent = document.querySelector(".logo-content");
+    const titleInfo = document.querySelector(".title-info");
     const loginContent = document.querySelector(".login-content");
     const loginInfo = document.querySelector(".login-info");
     const registerContent = document.querySelector(".register-content");
@@ -36,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function() {
         loginInfo.classList.remove("hidden");
 
         registerContent.classList.remove("hidden");
-        registerInfo.classList.add("hidden");
+        registerInfo.classList.add("hidden");;
 
         if (updateUrl && window.location.pathname !== registerPath) {
             window.history.pushState({ authView: "register" }, "", registerPath);

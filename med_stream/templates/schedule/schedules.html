@@ -38,110 +38,113 @@
       </div>
     </div>
 
-    <!--OPD Room Data-->
-    <div class="mb-4">
-      <h3 class="text-uppercase">OPD Rooms</h3>
-      <div class="table-responsive">
-        <table class="table table-bordered">
-          <thead class="table-danger">
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Organization</th>
-              <th scope="col">Facility</th>
-              <th scope="col">Block</th>
-              <th scope="col">Floor</th>
-            </tr>
-          </thead>
-          <tbody class="table-info">
-            {% if opd_rooms %}
-              {% for room in opd_rooms %}
-                <tr>
-                  <td>{{ room.name }}</td>
-                  <td>{{ room.organization.name|default:"-" }}</td>
-                  <td>{{ room.facility.name|default:"-" }}</td>
-                  <td>{{ room.block.name|default:"-" }}</td>
-                  <td>{{ room.floor.name|default:"-" }}</td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr><td colspan="4">No OPD rooms found.</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
+    <ul class="nav nav-pills mb-3" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="opd-room-tab" data-bs-toggle="tab" data-bs-target="#opd-room-tab-pane" type="button" role="tab" aria-controls="opd-room-tab-pane" aria-selected="true">OPD Room</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="opd-schedule-tab" data-bs-toggle="tab" data-bs-target="#opd-schedule-tab-pane" type="button" role="tab" aria-controls="opd-schedule-tab-pane" aria-selected="false">OPD Schedules</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="doctor-tab" data-bs-toggle="tab" data-bs-target="#doctor-tab-pane" type="button" role="tab" aria-controls="doctor-tab-pane" aria-selected="false">Doctor Schedules</button>
+      </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade show active" id="opd-room-tab-pane" role="tabpanel" aria-labelledby="opd-room-tab" tabindex="0">
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead class="table-danger">
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Organization</th>
+                <th scope="col">Facility</th>
+                <th scope="col">Block</th>
+                <th scope="col">Floor</th>
+              </tr>
+            </thead>
+            <tbody class="table-info">
+              {% if opd_rooms %}
+                {% for room in opd_rooms %}
+                  <tr>
+                    <td>{{ room.name }}</td>
+                    <td>{{ room.organization.name|default:"-" }}</td>
+                    <td>{{ room.facility.name|default:"-" }}</td>
+                    <td>{{ room.block.name|default:"-" }}</td>
+                    <td>{{ room.floor.name|default:"-" }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4">No OPD rooms found.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-
-
-    <!--OPD Schedules Data-->
-    <div class="mb-4">
-      <h3 class="text-uppercase fw-bold">OPD Schedules</h3>
-      <div class="table-responsive">
-        <table class="table table-bordered">
-          <thead class="table-danger">
-            <tr>
-              <th scope="col">Doctor</th>
-              <th scope="col">Facility</th>
-              <th scope="col">OPD Room</th>
-              <th scope="col">Date</th>
-              <th scope="col">Day</th>
-              <th scope="col">Start</th>
-              <th scope="col">End</th>
-              <th scope="col">Available</th>
-            </tr>
-          </thead>
-          <tbody class="table-info">
-            {% if opd_schedules %}
-              {% for schedule in opd_schedules %}
-                <tr>
-                  <td>{{ schedule.doctor.name|default:"-" }}</td>
-                  <td>{{ schedule.doctor.facility.name|default:"-" }}</td>
-                  <td>{{ schedule.opd_room.name|default:"-" }}</td>
-                  <td>{{ schedule.opd_date|date:"d M Y"|default:"Recurring" }}</td>
-                  <td>{{ schedule.get_day_of_week_display }}</td>
-                  <td>{{ schedule.start_time }}</td>
-                  <td>{{ schedule.end_time }}</td>
-                  <td>{% if schedule.is_available %}Yes{% else %}No{% endif %}</td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr><td colspan="8">No OPD schedules found.</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
+      <div class="tab-pane fade" id="opd-schedule-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead class="table-danger">
+              <tr>
+                <th scope="col">Doctor</th>
+                <th scope="col">Facility</th>
+                <th scope="col">OPD Room</th>
+                <th scope="col">Date</th>
+                <th scope="col">Day</th>
+                <th scope="col">Start</th>
+                <th scope="col">End</th>
+                <th scope="col">Available</th>
+              </tr>
+            </thead>
+            <tbody class="table-info">
+              {% if opd_schedules %}
+                {% for schedule in opd_schedules %}
+                  <tr>
+                    <td>{{ schedule.doctor.name|default:"-" }}</td>
+                    <td>{{ schedule.doctor.facility.name|default:"-" }}</td>
+                    <td>{{ schedule.opd_room.name|default:"-" }}</td>
+                    <td>{{ schedule.opd_date|date:"d M Y"|default:"Recurring" }}</td>
+                    <td>{{ schedule.get_day_of_week_display }}</td>
+                    <td>{{ schedule.start_time }}</td>
+                    <td>{{ schedule.end_time }}</td>
+                    <td>{% if schedule.is_available %}Yes{% else %}No{% endif %}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="8">No OPD schedules found.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-
-
-    <!--Doctor Schedules Data-->
-    <div>
-      <h3 class="text-uppercase fw-bold">Doctor Schedules</h3>
-      <div class="table-responsive">
-        <table class="table table-bordered">
-          <thead class="table-danger">
-            <tr>
-              <th scope="col">Doctor</th>
-              <th scope="col">Facility</th>
-              <th scope="col">Start</th>
-              <th scope="col">End</th>
-              <th scope="col">Reason</th>
-            </tr>
-          </thead>
-          <tbody class="table-info">
-            {% if doctor_schedules %}
-              {% for schedule in doctor_schedules %}
-                <tr>
-                  <td>{{ schedule.doctor.name|default:"-" }}</td>
-                  <td>{{ schedule.doctor.facility.name|default:"-" }}</td>
-                  <td>{{ schedule.start_date }}</td>
-                  <td>{{ schedule.end_date }}</td>
-                  <td>{{ schedule.reason|default:"-" }}</td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr><td colspan="6">No doctor schedules found.</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
+      <div class="tab-pane fade" id="doctor-tab-pane" role="tabpanel" aria-labelledby="contact-tab" tabindex="0">
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead class="table-danger">
+              <tr>
+                <th scope="col">Doctor</th>
+                <th scope="col">Facility</th>
+                <th scope="col">Start</th>
+                <th scope="col">End</th>
+                <th scope="col">Reason</th>
+              </tr>
+            </thead>
+            <tbody class="table-info">
+              {% if doctor_schedules %}
+                {% for schedule in doctor_schedules %}
+                  <tr>
+                    <td>{{ schedule.doctor.name|default:"-" }}</td>
+                    <td>{{ schedule.doctor.facility.name|default:"-" }}</td>
+                    <td>{{ schedule.start_date }}</td>
+                    <td>{{ schedule.end_date }}</td>
+                    <td>{{ schedule.reason|default:"-" }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="6">No doctor schedules found.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

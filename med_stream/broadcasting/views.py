@@ -2,13 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import BroadcastSession
 from .forms import DevicePlaybackForm
 from devices.models import DeviceLog, Device
 from devices.enums import LogType
 from layouts.models import Layout
-from playlists.models import PlaylistItem
+from playlists.models import PlaylistItem, Playlist
 from schedules.models import Doctor, DoctorSchedule, OPDSchedule
 from django.utils import timezone
 from .enums import BroadcastStatus
@@ -529,6 +530,10 @@ def AllBroadcastView(request):
             )
             .order_by("-started_at")
         )
+
+    paginator = Paginator(broadcasts, 10)
+    page_number = request.GET.get("page")
+    broadcasts = paginator.get_page(page_number)
 
     context = {
         "broadcasts": broadcasts,
