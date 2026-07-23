@@ -626,6 +626,16 @@ async function renderDoctorSchedule(commandId, payload) {
     );
 }
 
+function chunkArray(array, size) {
+    const chunks = [];
+
+    for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+    }
+
+    return chunks;
+}
+
 async function renderOpdSchedule(commandId, payload) {
 
     setLayout("split");
@@ -675,23 +685,51 @@ async function renderOpdSchedule(commandId, payload) {
         grouped[key].Days.push(item.day);
     });
 
+    const dayMap = {
+        Monday: "Mon.",
+        Tuesday: "Tue.",
+        Wednesday: "Wed.",
+        Thursday: "Thu.",
+        Friday: "Fri.",
+        Saturday: "Sat.",
+        Sunday: "Sun."
+    };
+
     const tableData = Object.values(grouped).map(item => ({
         ...item,
-        Days: item.Days.join(", "),
+        Days: item.Days.map(day => dayMap[day] || day).join(", "),
     }));
 
     /* end */
 
+    const ROWS_PER_PAGE = 8;
+
+    const pages = chunkArray(tableData, ROWS_PER_PAGE);
+
+    let currentPage = 0;
+
+    function renderCurrentPage() {
+
     if (typeof renderTable === "function") {
         renderTable(
-            tableData,
-            "OPD Schedule"
+            pages[currentPage],
+            `OPD Schedule (${currentPage + 1}/${pages.length})`
         );
     } else {
         renderFallbackTable(
-            tableData,
-            "OPD Schedule"
+            pages[currentPage],
+            `OPD Schedule (${currentPage + 1}/${pages.length})`
         );
+    }
+    currentPage = (currentPage + 1) % pages.length;
+    }
+
+    clearInterval(playlistTimer);
+
+    renderCurrentPage();
+
+    if (pages.length > 1) {
+        playlistTimer = setInterval(renderCurrentPage, 8000);
     }
 
     setStatus(
