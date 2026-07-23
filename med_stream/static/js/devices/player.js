@@ -606,9 +606,11 @@ async function renderDoctorSchedule(commandId, payload) {
     }
 
     const slides = schedules.map(item => 
-        `Doctor : ${item.Doctor}
-        Status : ${item.Status}
-        Date : ${item.From} - ${item.To}`
+    `
+    Doctor : ${item.Doctor}
+    Status : ${item.Status}
+    Date : ${item.From} - ${item.To}
+    `
     );
 
     renderContentSlides(
@@ -702,7 +704,7 @@ async function renderOpdSchedule(commandId, payload) {
 
     /* end */
 
-    const ROWS_PER_PAGE = 8;
+    const ROWS_PER_PAGE = 12;
 
     const pages = chunkArray(tableData, ROWS_PER_PAGE);
 
