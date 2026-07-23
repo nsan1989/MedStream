@@ -615,7 +615,7 @@ async function renderDoctorSchedule(commandId, payload) {
 
     renderContentSlides(
         slides,
-        "Doctor Off Schedule",
+        "Consultant Off Schedule",
         "Live update"
     );
 
@@ -704,9 +704,18 @@ async function renderOpdSchedule(commandId, payload) {
 
     /* end */
 
-    const ROWS_PER_PAGE = 12;
+    const availableHeight = stageNode.clientHeight;
 
-    const pages = chunkArray(tableData, ROWS_PER_PAGE);
+    const titleHeight = 70;
+    const headerHeight = 60;
+    const rowHeight = 72;
+
+    const rowsPerPage = Math.max(
+        3,
+        Math.floor((availableHeight - titleHeight - headerHeight) / rowHeight)
+    );
+
+    const pages = chunkArray(tableData, rowsPerPage);
 
     let currentPage = 0;
 
