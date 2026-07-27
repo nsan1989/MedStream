@@ -638,6 +638,18 @@ function chunkArray(array, size) {
     return chunks;
 }
 
+function formatTime12Hour(time) {
+    if (!time) return "";
+
+    let [hours, minutes] = time.split(":");
+    hours = parseInt(hours, 10);
+
+    const period = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+
+    return `${hours}:${minutes} ${period}`;
+}
+
 async function renderOpdSchedule(commandId, payload) {
 
     setLayout("split");
@@ -680,7 +692,7 @@ async function renderOpdSchedule(commandId, payload) {
                 Doctor: item.doctor,
                 Department: item.department,
                 Days: [],
-                Timing: `${item.start_time} - ${item.end_time}`,
+                Timing: `${formatTime12Hour(item.start_time)} - ${formatTime12Hour(item.end_time)}`,
             };
         }
 
