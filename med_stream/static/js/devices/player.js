@@ -697,9 +697,22 @@ async function renderOpdSchedule(commandId, payload) {
         Sunday: "Sun."
     };
 
+    const dayOrder = {
+        Monday: 1,
+        Tuesday: 2,
+        Wednesday: 3,
+        Thursday: 4,
+        Friday: 5,
+        Saturday: 6,
+        Sunday: 7
+    };
+
     const tableData = Object.values(grouped).map(item => ({
         ...item,
-        Days: item.Days.map(day => dayMap[day] || day).join(", "),
+        Days: [...new Set(item.Days)]
+        .sort((a, b) => dayOrder[a] - dayOrder[b])
+        .map(day => dayMap[day] || day)
+        .join(", "),
     }));
 
     /* end */
